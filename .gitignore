@@ -1,4 +1,4 @@
-.dependencies
+/.dependencies
 /MarlinConfig.cmake
 /MarlinConfigVersion.cmake
 /bin/
@@ -9,4 +9,5 @@
 /doc/latex/
 /include/
 /lib/
-*~
+/*~
+
