@@ -157,7 +157,7 @@ namespace marlin {
     /** 
      *  @brief  Print the parameters and their values with verbosity level MESSAGE.
      */
-    void printParameters() ; 
+    void printParameters() ;
   
     /** 
      *  @brief  Description of processor.
@@ -372,11 +372,7 @@ namespace marlin {
     /** Helper function for fixing old steering files */
     const ProcParamMap& procMap() ;
 
-    /**
-     *  @brief  Set the scheduler instance in which this processor is scheduled at runtime 
-     * 
-     *  @param scheduler the scheduler instance
-     */
+    /** Set the scheduler instance in which this processor is scheduled at runtime */
     void setScheduler( Scheduler *scheduler ) ;
     
   protected:
@@ -585,6 +581,12 @@ namespace marlin {
   
   inline const ProcParamMap& Processor::procMap() {
     return _map ;
+  }
+  
+  //--------------------------------------------------------------------------
+  
+  inline void Processor::setScheduler( Scheduler *scheduler ) {
+    _scheduler = scheduler ;
   }
  
 } // end namespace marlin 
