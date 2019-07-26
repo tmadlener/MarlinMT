@@ -920,7 +920,7 @@ namespace marlin{
             throw ParseException( str.str() ) ;
         }
 
-        std::cout << "Read constant \"" << name << "\" , value = \"" << value << "\"" << std::endl ;
+        // std::cout << "Read constant \"" << name << "\" , value = \"" << value << "\"" << std::endl ;
     }
 
 
