@@ -16,10 +16,12 @@
    <parameter name="MaxRecordNumber" value="4"/>
  </datasource>
 
- <geometry type="GearGeometry">
+<geometry type="EmptyGeometry"/>
+
+ <!-- <geometry type="GearGeometry">
    <parameter name="GearFile"> gear_simjob.xml </parameter>
    <parameter name="DumpGeometry"> false </parameter>
- </geometry>
+ </geometry> -->
 
  <processor name="MyTestEventModifier" type="TestEventModifier">
  </processor>

@@ -17,11 +17,13 @@
    <parameter name="MaxRecordNumber" value="1000"/>
    <parameter name="SkipNEvents" value="50" />
  </datasource>
+ 
+ <geometry type="EmptyGeometry"/>
 
- <geometry type="GearGeometry">
+ <!-- <geometry type="GearGeometry">
    <parameter name="GearFile"> gear_simjob.xml </parameter>
    <parameter name="DumpGeometry"> false </parameter>
- </geometry>
+ </geometry> -->
 
  <processor name="MyTestProcessorEventSeeder" type="TestProcessorEventSeeder">
  </processor>

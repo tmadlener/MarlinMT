@@ -3,6 +3,7 @@
 // ----- include for verbosity dependend logging ---------
 #include "marlin/Logging.h"
 #include "marlin/ProcessorApi.h"
+#include "marlin/PluginManager.h"
 
 #include "IMPL/LCEventImpl.h"
 #include "IMPL/LCRunHeaderImpl.h"
@@ -11,7 +12,7 @@ using namespace lcio ;
 using namespace marlin ;
 
 
-TestProcessorEventSeeder aTestProcessorEventSeeder ;
+// TestProcessorEventSeeder aTestProcessorEventSeeder ;
 
 
 TestProcessorEventSeeder::TestProcessorEventSeeder() : Processor("TestProcessorEventSeeder") {
@@ -58,7 +59,7 @@ void TestProcessorEventSeeder::processEvent( EVENT::LCEvent * evt ) {
   try{
     ProcessorApi::registerForRandomSeeds( this ) ;
   }
-  catch( lcio::Exception ) {
+  catch( marlin::Exception ) {
     log<ERROR>() << name() << " failed to register processor to event seed generator (TEST is OK)" << std::endl ;
   }
 
@@ -120,3 +121,5 @@ void TestProcessorEventSeeder::end(){
 			  << std::endl ;
 
 }
+
+MARLIN_DECLARE_PROCESSOR( TestProcessorEventSeeder )
