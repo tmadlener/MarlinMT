@@ -1,278 +1,186 @@
 #include "marlin/Processor.h"
-#include "marlin/ProcessorMgr.h" 
-#include "marlin/Global.h"
-#include "marlin/VerbosityLevels.h"
 
-using namespace lcio ;
+// -- marlin headers
+// #include "marlin/PluginManager.h"
+#include "marlin/Application.h"
 
+namespace marlin {
 
-namespace marlin{
-
-  // set default verbosity level to MESSAGE
-  //int Processor::Verbosity=Processor::MESSAGE;
-
-  Processor::Processor(const std::string& typeName) :
+  Processor::Processor( const std::string& typeName ) :
     _description(" description not set by author ") ,
     _typeName( typeName ) ,
     _parameters(0) ,
-    _isFirstEvent( true ),
-    _logLevelName(""),
-    _str(0) {
-  
-    //register processor in map
-    ProcessorMgr::instance()->registerProcessor( this ) ;
-
-
-    registerOptionalParameter( "Verbosity" , 
+    _logLevelName("") {
+    // verbosity default parameter
+    registerOptionalParameter( "Verbosity" ,
 			       "verbosity level of this processor (\"DEBUG0-4,MESSAGE0-4,WARNING0-4,ERROR0-4,SILENT\")"  ,
-			       _logLevelName ,  
-			       std::string("DEBUG") ) ;
-  
+			       _logLevelName ,
+			       std::string("") ) ;
+    std::stringstream ss ; ss << _typeName <<  "_" << (void*)this ;
+    _logger = Logging::createLogger( ss.str() ) ;
+    _logger->setLevel( "MESSAGE" );
   }
 
-
-  Processor::Processor() : _parameters(NULL), _isFirstEvent(false), _str(NULL) {}
-
-  Processor::~Processor() {
-
-    if( _str !=0 )
-      delete _str ;
-  
-    typedef ProcParamMap::iterator PMI ;
-  
-    for( PMI i = _map.begin() ; i != _map.end() ; i ++ ) {
-    
-      //     streamlog_out(DEBUG) << " deleting processor parameter " << i->second->name() 
-      // 			 << " of processor [" << name() << "]" 
-      // 			 << std::endl ;
-
-      delete i->second ;
-    }
-  }
-
+  //--------------------------------------------------------------------------
 
   void Processor::setParameters( std::shared_ptr<StringParameters> processorParameters) {
-
     _parameters = processorParameters ;
-
     updateParameters();
-
-    // need to reset the log level name in case it has not been set by the user 
-    if( !parameterSet("Verbosity") ){
+    // need to reset the log level name in case it has not been set by the user
+    if( not parameterSet("Verbosity") ) {
       _logLevelName = "" ;
     }
-  
-    //  streamlog_out( MESSAGE)  << " setParameters :  Verbosity : " << _parameters->getStringVal("Verbosity") 
-    // 			  << " parameterSet : " << parameterSet("Verbosity") 
-    // 			  << " log level name : " << _logLevelName << std::endl ; 
-    
-  }
-  
-  std::stringstream& Processor::log() const {
-    
-    if( _str !=0 )
-      delete _str ;
-
-    _str = new std::stringstream ;
-
-    return *_str ;
+    if( _parameters->isParameterSet( "ProcessorName" ) ) {
+      setName( _parameters->getValue<std::string>( "ProcessorName" ) ) ;
+    }
   }
 
+  //--------------------------------------------------------------------------
 
+  void Processor::printParameters() const {
+    printParameters<MESSAGE>() ;
+  }
 
-  void Processor::printParameters() { printParameters<MESSAGE>() ;  }
+  //--------------------------------------------------------------------------
 
-  void Processor::printDescription() {
-    
-    std::cout << ".begin My"        <<  type()  << std::endl 
-	      << "ProcessorType "   <<  type() << std::endl ;
-    
+  void Processor::printDescription() const {
+    std::cout << ".begin My"        <<  type()  << std::endl << "ProcessorType "   <<  type() << std::endl ;
     std::cout << "#---" << description() << std::endl ;
-    
-    typedef ProcParamMap::iterator PMI ;
-    
-    //     std::cout << std::endl  
-    // 	      << "# processor parameters:" << std::endl ;
-    
-    for( PMI i = _map.begin() ; i != _map.end() ; i ++ ) {
-      
-      ProcessorParameter* p = i->second ;
-
-      std::cout << std::endl 
-		<< "#\t"  << p->description() << std::endl 
-		<< "#\t type: " << " [" <<  p->type() << "]" 
-		<< std::endl ;
-
-      if( p->isOptional() ) {
-	
-	std::cout << "#\t example: " << std::endl ;
-	
-	std::cout << "#\t"   << p->name()   
-		  << "   "  << p->defaultValue() 
-		  << std::endl 
-		  << std::endl ;
-	
-      }else{
-
-	std::cout << "#\t default: " << p->defaultValue() 
-		  << std::endl ;
-	
-	std::cout << "\t"   << p->name()   
-		  << "   "  << p->defaultValue() 
-		  << std::endl 
-		  << std::endl ;
+    for( auto i = this->pbegin() ; i != this->pend() ; i ++ ) {
+      // ProcessorParameter* p = i->second ;
+      std::cout << std::endl
+		    << "#\t"  << i->second->description() << std::endl
+		    << "#\t type: " << " [" <<  i->second->type() << "]"
+		    << std::endl ;
+      if( i->second->isOptional() ) {
+      	std::cout << "#\t example: " << std::endl ;
+      	std::cout << "#\t"   << i->second->name()
+      		  << "   "  << i->second->defaultValue()
+      		  << std::endl
+      		  << std::endl ;
       }
-      
-    }
+      else {
+      	std::cout << "#\t default: " << i->second->defaultValue()
+      		  << std::endl ;
 
-    std::cout << ".end -------------------------------------------------" 
-	      << std::endl 
+      	std::cout << "\t"   << i->second->name()
+      		  << "   "  << i->second->defaultValue()
+      		  << std::endl
+      		  << std::endl ;
+      }
+    }
+    std::cout << ".end -------------------------------------------------"
+	      << std::endl
 	      << std::endl ;
-
-
   }
 
-  void Processor::printDescriptionXML(std::ostream& stream) {
+  //--------------------------------------------------------------------------
 
-    if(&stream == &std::cout){
-      stream << " <processor name=\"My" <<  type()  << "\"" 
-	     << " type=\"" <<  type() << "\">" 
+  void Processor::printDescriptionXML(std::ostream& stream) const {
+    if( name().empty() ){
+      stream << " <processor name=\"My" <<  type()  << "\""
+	     << " type=\"" <<  type() << "\">"
 	     << std::endl ;
     }
-    else{
-      stream << " <processor name=\"" <<  name()  << "\"" 
-	     << " type=\"" <<  type() << "\">" 
+    else {
+      stream << " <processor name=\"" <<  name()  << "\""
+	     << " type=\"" <<  type() << "\">"
 	     << std::endl ;
-
     }
-    
     stream << " <!--" << description() << "-->" << std::endl ;
-    
-    typedef ProcParamMap::iterator PMI ;
-    
-    for( PMI i = _map.begin() ; i != _map.end() ; i ++ ) {
-      
-      ProcessorParameter* p = i->second ;
-
-      stream << "  <!--" << p->description() << "-->" << std::endl ;
-
-      if( p->isOptional() ) {
-	stream << "  <!--parameter name=\"" << p->name() << "\" " 
-	       << "type=\"" << p->type() ;
-
-	if ( isInputCollectionName( p->name() ) )
-	  stream << "\" lcioInType=\"" << _inTypeMap[ p->name() ]  ;
-
-	if ( isOutputCollectionName( p->name() ) )
-	  stream << "\" lcioOutType=\"" << _outTypeMap[ p->name() ]  ;
-
-	stream << "\">"
-	       << p->defaultValue() 
-	       << " </parameter-->"
-	       << std::endl ;
-      } else {
-	stream << "  <parameter name=\"" << p->name() << "\" " 
-	       << "type=\"" << p->type() ;
-
-	if ( isInputCollectionName( p->name() ) )
-	  stream << "\" lcioInType=\"" << _inTypeMap[ p->name() ]  ;
-
-	if ( isOutputCollectionName( p->name() ) )
-	  stream << "\" lcioOutType=\"" << _outTypeMap[ p->name() ]  ;
-
-	stream  << "\">"
-		<< p->defaultValue() 
-		<< " </parameter>"
-		<< std::endl ;
+    for( auto i = this->pbegin() ; i != this->pend() ; i ++ ) {
+      stream << "  <!--" << i->second->description() << "-->" << std::endl ;
+      if( i->second->isOptional() ) {
+	      stream << "  <!--parameter name=\"" << i->second->name() << "\" "
+	      << "type=\"" << i->second->type() ;
+	      if ( isInputCollectionName( i->second->name() ) ) {
+	        stream << "\" lcioInType=\"" << getLCIOInType( i->second->name() ) ;
+        }
+	      if ( isOutputCollectionName( i->second->name() ) ) {
+	       stream << "\" lcioOutType=\"" << getLCIOOutType( i->second->name() ) ;
+        }
+      	stream << "\">"
+      	       << i->second->defaultValue()
+      	       << " </parameter-->"
+      	       << std::endl ;
+      }
+      else {
+	      stream << "  <parameter name=\"" << i->second->name() << "\" "
+	       << "type=\"" << i->second->type() ;
+      	if ( isInputCollectionName( i->second->name() ) ) {
+      	  stream << "\" lcioInType=\"" << getLCIOInType( i->second->name() ) ;
+        }
+      	if ( isOutputCollectionName( i->second->name() ) ) {
+      	  stream << "\" lcioOutType=\"" << getLCIOOutType( i->second->name() ) ;
+        }
+      	stream  << "\">"
+      		<< i->second->defaultValue()
+      		<< " </parameter>"
+      		<< std::endl ;
       }
     }
-    
-    stream << "</processor>" 
-	   << std::endl 
+    stream << "</processor>"
+	   << std::endl
 	   << std::endl ;
-    
   }
 
-  //   ProcessorParameter* Processor::getProcessorParameter( const std::string name) {
-  //     ProcParamMap::iterator it = _map.find(name) ;
-  //     if( it != _map.end() )
-  //       return it->second ;    
-  //     else
-  //       return 0 ;
-  //   }
+  //--------------------------------------------------------------------------
 
-  bool Processor::parameterSet( const std::string& parameterName ) {
-
-    ProcParamMap::iterator it = _map.find(parameterName) ;
-
-    if( it != _map.end() )
-      return it->second->valueSet() ;    
-    else
-      return false ;
-  }
-  
-  void Processor::baseInit() {
-    
-    //fg: now in setParameters 
-    // updateParameters();
-
+  void Processor::baseInit( Application *application ) {
+    _application = application ;
+    _logger = app().createLogger( name() ) ;
+    log<DEBUG2>() << "Creating logger for processor " << name() << std::endl ;
+    if( parameterSet("Verbosity") ) {
+      _logLevelName = getParameter<std::string>("Verbosity") ;
+      _logger->setLevel( _logLevelName ) ;
+    }
+    log<DEBUG2>() << "Processor " << name() << ": init ..." << std::endl ;
     init() ;
   }
-  
+
+  //--------------------------------------------------------------------------
+
   void Processor::updateParameters() {
-
-    typedef ProcParamMap::iterator PMI ;
-
-    for( PMI i = _map.begin() ; i != _map.end() ; i ++ ) {
-
+    for( auto i = this->pbegin() ; i != this->pend() ; i ++ ) {
       i->second->setValue( _parameters.get() ) ;
     }
   }
 
-  void Processor::setReturnValue( bool val) {
-    
-    ProcessorMgr::instance()->setProcessorReturnValue(  this , val ) ;
-  }
-  
-  void Processor::setLCIOInType(const std::string& collectionName,  const std::string& lcioInType) {
-    _inTypeMap[ collectionName ] = lcioInType ;
-  }
+  //--------------------------------------------------------------------------
 
-  std::string Processor::getLCIOInType( const std::string& colName ) {
-
-    if( isInputCollectionName( colName )  )
-      return _inTypeMap[ colName ] ;
-    else
-      return "" ;
+  std::pair<bool,bool> Processor::getForcedRuntimeOption( RuntimeOption option ) const {
+    std::pair<bool,bool> result ;
+    result.first = false ;
+    auto iter = _forcedRuntimeOptions.find( option ) ;
+    if( _forcedRuntimeOptions.end() != iter ) {
+      result.first = true ;
+      result.second = iter->second ;
+    }
+    return result ;
   }
 
+  //--------------------------------------------------------------------------
 
-  std::string Processor::getLCIOOutType( const std::string& colName ) {
-
-    if( isOutputCollectionName( colName )  )
-      return _outTypeMap[ colName ] ;
-    else
-      return "" ;
+  void Processor::forceRuntimeOption( RuntimeOption option, bool value ) {
+    _forcedRuntimeOptions[option] = value ;
   }
 
+  //--------------------------------------------------------------------------
 
-  bool Processor::isInputCollectionName( const std::string& pName  ) {
-    return _inTypeMap.find( pName  ) != _inTypeMap.end() ;
-  }
-  
-  void Processor::setLCIOOutType(const std::string& collectionName,  const std::string& lcioOutType) {
-    _outTypeMap[ collectionName ] = lcioOutType ;
-  }
-
-  bool Processor::isOutputCollectionName( const std::string& pName  ) {
-    return _outTypeMap.find( pName ) != _outTypeMap.end() ;
+  const Application &Processor::app() const {
+    if ( nullptr == _application ) {
+      throw Exception( "Processor::app: app pointer not set!" ) ;
+    }
+    return *_application ;
   }
 
-  void Processor::setReturnValue( const std::string& keyName, bool val ){
-  
-    ProcessorMgr::instance()->setProcessorReturnValue(  this , val , keyName ) ;
-  }
+  //--------------------------------------------------------------------------
 
+  Application &Processor::app() {
+    if ( nullptr == _application ) {
+      throw Exception( "Processor::app: app pointer not set!" ) ;
+    }
+    return *_application ;
+  }
 
 } // namespace marlin
-

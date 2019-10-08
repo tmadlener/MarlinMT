@@ -1,7 +1,8 @@
 #include "TestEventModifier.h"
 
 // ----- include for verbosity dependend logging ---------
-#include "marlin/VerbosityLevels.h"
+#include "marlin/Logging.h"
+#include "marlin/PluginManager.h"
 
 #include "IMPL/LCEventImpl.h"
 #include "IMPL/LCRunHeaderImpl.h"
@@ -10,7 +11,7 @@ using namespace lcio ;
 using namespace marlin ;
 
 
-TestEventModifier aTestEventModifier ;
+// TestEventModifier aTestEventModifier ;
 
 
 TestEventModifier::TestEventModifier() : Processor("TestEventModifier") {
@@ -119,3 +120,5 @@ void TestEventModifier::end(){
   
 }
 
+
+MARLIN_DECLARE_PROCESSOR( TestEventModifier )

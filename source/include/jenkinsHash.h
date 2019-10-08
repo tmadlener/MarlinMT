@@ -1,6 +1,16 @@
 #ifndef JENKINSHASH_INCLUDED
 #define JENKINSHASH_INCLUDED
 
+#if defined __has_cpp_attribute
+#if __has_cpp_attribute(fallthrough)
+#define MARLIN_FALLTHROUGH [[fallthrough]]
+#else
+#define MARLIN_FALLTHROUGH
+#endif
+#else
+#define MARLIN_FALLTHROUGH
+#endif
+
 /*
 
 Original source by Bob Jenkins
@@ -25,16 +35,16 @@ For every delta with one or two bits set, and the deltas of all three
   have at least 1/4 probability of changing.
 * If mix() is run forward, every bit of c will change between 1/3 and
   2/3 of the time.  (Well, 22/100 and 78/100 for some 2-bit deltas.)
-mix() was built out of 36 single-cycle latency instructions in a 
+mix() was built out of 36 single-cycle latency instructions in a
   structure that could supported 2x parallelism, like so:
-      a -= b; 
+      a -= b;
       a -= c; x = (c>>13);
       b -= c; a ^= x;
       b -= a; x = (a<<8);
       c -= a; b ^= x;
       c -= b; x = (b>>13);
       ...
-  Unfortunately, superscalar Pentiums and Sparcs can't take advantage 
+  Unfortunately, superscalar Pentiums and Sparcs can't take advantage
   of that parallelism.  They've also turned some of those single-cycle
   latency instructions into multi-cycle latency instructions.  Still,
   this is the fastest good hash I could find.  There were about 2^^68
@@ -81,50 +91,50 @@ Use for hash table lookup, or anything where one collision in 2^^32 is
 acceptable.  Do NOT use for cryptographic purposes.
 --------------------------------------------------------------------
 */
-unsigned jenkins_hash ( unsigned char *k, unsigned length, unsigned initval )
+inline unsigned jenkins_hash ( unsigned char *k, unsigned length, unsigned initval )
 {
   unsigned a, b;
   unsigned c = initval;
   unsigned len = length;
- 
+
   a = b = 0x9e3779b9;
-  
+
   while ( len >= 12 ) {
-    a += ( k[0] + ( (unsigned)k[1] << 8 ) 
+    a += ( k[0] + ( (unsigned)k[1] << 8 )
 	   + ( (unsigned)k[2] << 16 )
 	   + ( (unsigned)k[3] << 24 ) );
-    b += ( k[4] + ( (unsigned)k[5] << 8 ) 
+    b += ( k[4] + ( (unsigned)k[5] << 8 )
 	   + ( (unsigned)k[6] << 16 )
 	   + ( (unsigned)k[7] << 24 ) );
-    c += ( k[8] + ( (unsigned)k[9] << 8 ) 
+    c += ( k[8] + ( (unsigned)k[9] << 8 )
 	   + ( (unsigned)k[10] << 16 )
 	   + ( (unsigned)k[11] << 24 ) );
-    
+
     mix ( a, b, c );
-    
+
     k += 12;
     len -= 12;
   }
-  
+
   c += length;
-  
+
   switch ( len ) {
-  case 11: c += ( (unsigned)k[10] << 24 );
-  case 10: c += ( (unsigned)k[9] << 16 );
-  case 9 : c += ( (unsigned)k[8] << 8 );
+  case 11: c += ( (unsigned)k[10] << 24 ); MARLIN_FALLTHROUGH ;
+  case 10: c += ( (unsigned)k[9] << 16 ); MARLIN_FALLTHROUGH ;
+  case 9 : c += ( (unsigned)k[8] << 8 ); MARLIN_FALLTHROUGH ;
     /* First byte of c reserved for length */
-  case 8 : b += ( (unsigned)k[7] << 24 );
-  case 7 : b += ( (unsigned)k[6] << 16 );
-  case 6 : b += ( (unsigned)k[5] << 8 );
-  case 5 : b += k[4];
-  case 4 : a += ( (unsigned)k[3] << 24 );
-  case 3 : a += ( (unsigned)k[2] << 16 );
-  case 2 : a += ( (unsigned)k[1] << 8 );
-  case 1 : a += k[0];
+  case 8 : b += ( (unsigned)k[7] << 24 ); MARLIN_FALLTHROUGH ;
+  case 7 : b += ( (unsigned)k[6] << 16 ); MARLIN_FALLTHROUGH ;
+  case 6 : b += ( (unsigned)k[5] << 8 ); MARLIN_FALLTHROUGH ;
+  case 5 : b += k[4]; MARLIN_FALLTHROUGH ;
+  case 4 : a += ( (unsigned)k[3] << 24 ); MARLIN_FALLTHROUGH ;
+  case 3 : a += ( (unsigned)k[2] << 16 ); MARLIN_FALLTHROUGH ;
+  case 2 : a += ( (unsigned)k[1] << 8 ); MARLIN_FALLTHROUGH ;
+  case 1 : a += k[0]; MARLIN_FALLTHROUGH ;
   }
-  
+
   mix ( a, b, c );
-  
+
   return c;
 }
 

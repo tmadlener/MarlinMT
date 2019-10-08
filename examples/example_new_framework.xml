@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="us-ascii"?>
+
+<marlin>
+  <execute>
+    <processor name="Status"/>
+    <processor name="CPUCrunch"/>
+    <processor name="MyDumpEvent"/>
+  </execute>
+
+  <global>
+    <parameter name="Verbosity"> DEBUG </parameter>
+    <parameter name="Concurrency"> 10 </parameter>
+    <parameter name="ColoredConsole"> 0 </parameter>
+    <!-- <parameter name="LogFileName"> toto.log </parameter> -->
+  </global>
+
+  <datasource type="LCIO">
+    <parameter name="LCIOInputFiles">
+      test/testmarlin/simjob.slcio
+    </parameter>
+    <parameter name="MaxRecordNumber" value="0"/>
+    <parameter name="SkipNEvents" value="0"/>
+    <parameter name="LazyUnpack" value="false"/>
+  </datasource>
+
+  <!-- <geometry type="GearGeometry">
+    <parameter name="GearFile"> test/testmarlin/gear_ILD_00.xml </parameter>
+    <parameter name="DumpGeometry"> false </parameter>
+  </geometry> -->
+  
+  <geometry type="EmptyGeometry" />
+
+  <!-- <geometry type="DD4hepGeometry">
+    <parameter name="CompactFile"> /home/eteremi/soft/lcgeo/ILD/compact/ILD_l5_v02/ILD_l5_v02.xml </parameter>
+    <parameter name="DumpGeometry"> false </parameter>
+  </geometry> -->
+
+  <processor name="MyDumpEvent" type="DumpEvent" clone="true" critical="false">
+    <parameter name="DumpDetailed"> true </parameter>
+  </processor>
+
+  <processor name="CPUCrunch" type="CPUCrunching" clone="false" critical="false">
+    <parameter name="CrunchTime"> 200 </parameter>
+    <parameter name="CrunchSigma"> 100 </parameter>
+  </processor>
+
+  <processor name="Status" type="Statusmonitor" clone="false">
+    <parameter name="Verbosity"> MESSAGE </parameter>
+  </processor>
+
+
+</marlin>
