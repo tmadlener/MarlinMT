@@ -5,7 +5,6 @@
 #include <marlin/Utils.h>
 #include <marlin/DataSourcePlugin.h>
 #include <marlin/XMLParser.h>
-#include <marlin/Parser.h>
 #include <marlin/MarlinConfig.h>
 #include <marlin/EventExtensions.h>
 #include <marlin/IScheduler.h>
@@ -377,18 +376,10 @@ namespace marlin {
   //--------------------------------------------------------------------------
 
   std::shared_ptr<IParser> Application::createParser() const {
-    if( _steeringFileName.rfind(".xml") == std::string::npos // .xml not found at all
-      || !(  _steeringFileName.rfind(".xml") + strlen(".xml") == _steeringFileName.length() ) ) {
-      logger()->log<DEBUG2>() << "createParser: create old steering file parser" << std::endl ;
-      return std::make_shared<Parser>( _steeringFileName );
-    }
-    else {
-      logger()->log<DEBUG2>() << "createParser: create XML steering file parser" << std::endl ;
-      auto parser = std::make_shared<XMLParser>( _steeringFileName ) ;
-      // tell parser to take into account any options defined on the command line
-      parser->setCmdLineParameters( _cmdLineOptions ) ;
-      return parser ;
-    }
+    auto parser = std::make_shared<XMLParser>( _steeringFileName ) ;
+    // tell parser to take into account any options defined on the command line
+    parser->setCmdLineParameters( _cmdLineOptions ) ;
+    return parser ;
   }
 
   //--------------------------------------------------------------------------
