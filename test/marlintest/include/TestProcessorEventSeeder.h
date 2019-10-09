@@ -2,7 +2,6 @@
 #define TestProcessorEventSeeder_h 1
 
 #include "marlin/Processor.h"
-#include "marlin/EventModifier.h"
 
 #include "lcio.h"
 #include <string>
@@ -15,48 +14,34 @@ using namespace marlin ;
 
 
 /**  test processor for testing the uniquie event seeding functionality of the ProcessorEventSeeder service in Marlin.
- * 
- * 
+ *
+ *
  * @author S. J. Aplin, DESY
  */
 
 class TestProcessorEventSeeder : public Processor {
-  
  public:
-  
-  virtual Processor*  newProcessor() { return new TestProcessorEventSeeder ; }
-  
-  
-  TestProcessorEventSeeder() ;
-    
-  virtual const std::string & name() const { 
-    static std::string myName("TestProcessorEventSeeder") ; 
-    return myName ;  
-  } 
 
+  TestProcessorEventSeeder() ;
 
  /** Called at the begin of the job before anything is read.
    * Use to initialize the processor, e.g. book histograms.
    */
-  virtual void init() ;
-  
+  void init() ;
+
   /** Called for every run.
    */
-  virtual void processRunHeader( LCRunHeader* run ) ;
-  
+  void processRunHeader( LCRunHeader* run ) ;
+
   /** Called for every event - the working horse.
    */
-  virtual void processEvent( LCEvent * evt ) ; 
-  
-  
-  virtual void check( LCEvent * evt ) ; 
-  
-  
+  void processEvent( LCEvent * evt ) ;
+
   /** Called after data processing for clean up.
    */
-  virtual void end() ;
-  
-  
+  void end() ;
+
+
  protected:
 
   /** Input collection name.
@@ -70,6 +55,3 @@ class TestProcessorEventSeeder : public Processor {
 } ;
 
 #endif
-
-
-

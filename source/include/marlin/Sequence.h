@@ -66,7 +66,7 @@ namespace marlin {
      *
      *  @param  rhdr the run header to modify
      */
-    void modifyRunHeader( std::shared_ptr<EVENT::LCRunHeader> rhdr ) ;
+    // void modifyRunHeader( std::shared_ptr<EVENT::LCRunHeader> rhdr ) ;
 
     /**
      *  @brief  Call Processor::processEvent. Lock if the mutex has been initialized.
@@ -86,7 +86,7 @@ namespace marlin {
      *
      *  @param  event the event to modify
      */
-    clock::pair modifyEvent( std::shared_ptr<EVENT::LCEvent> event ) ;
+    // clock::pair modifyEvent( std::shared_ptr<EVENT::LCEvent> event ) ;
 
     /**
      *  @brief  Get the processor instance
@@ -193,7 +193,7 @@ namespace marlin {
      *
      *  @param  rhdr the run header to modify
      */
-    void modifyRunHeader( std::shared_ptr<EVENT::LCRunHeader> rhdr ) ;
+    // void modifyRunHeader( std::shared_ptr<EVENT::LCRunHeader> rhdr ) ;
 
     /**
      *  @brief  Process the event. Call processEvent() for each item in the sequence
@@ -207,7 +207,7 @@ namespace marlin {
      *
      *  @param  event the event to modify
      */
-    void modifyEvent( std::shared_ptr<EVENT::LCEvent> event ) ;
+    // void modifyEvent( std::shared_ptr<EVENT::LCEvent> event ) ;
 
     /**
      *  @brief  Generate a clock measure summary of all items
@@ -312,7 +312,7 @@ namespace marlin {
      *
      *  @param  rhdr the run header to modify
      */
-    void modifyRunHeader( std::shared_ptr<EVENT::LCRunHeader> rhdr ) ;
+    // void modifyRunHeader( std::shared_ptr<EVENT::LCRunHeader> rhdr ) ;
 
     /**
      *  @brief  Call Processor::end() for all processors

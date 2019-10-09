@@ -27,8 +27,8 @@ namespace marlin {
     // typedefs
     typedef unsigned int                                        SeedType ;
     typedef std::hash<const void*>                              HashFunction ;
-    typedef HashFunction::argument_type                         HashArgument ;
-    typedef HashFunction::result_type                           HashResult ;
+    typedef const void *                                        HashArgument ;
+    typedef std::size_t                                         HashResult ;
     typedef std::unordered_set<HashResult>                      EntryList ;
     typedef std::map<HashResult, SeedType>                      RandomSeedMap ;
     typedef std::mt19937                                        RandomGenerator ;
