@@ -2,7 +2,6 @@
 // -- marlin headers
 #include <marlin/Processor.h>
 #include <marlin/PluginManager.h>
-#include <marlin/EventModifier.h>
 #include <marlin/EventExtensions.h>
 
 // -- lcio headers
@@ -14,18 +13,18 @@
 
 namespace marlin {
 
-  /** Simple event selector processor. Returns true if the given event 
+  /** Simple event selector processor. Returns true if the given event
    *  was specified in the EvenList parameter.
-   * 
-   *  <h4>Output</h4> 
+   *
+   *  <h4>Output</h4>
    *  returns true or false
-   * 
+   *
    * @param  EventList:   pairs of: EventNumber RunNumber
-   * 
+   *
    * @author F. Gaede, DESY
-   * @version $Id:$ 
+   * @version $Id:$
    */
-  class EventSelectorProcessor : public Processor, public EventModifier {
+  class EventSelectorProcessor : public Processor {
     using EventNumberSet = std::set< std::pair< int, int > > ;
 
    public:
@@ -33,35 +32,25 @@ namespace marlin {
      *  @brief  Constructor
      */
     EventSelectorProcessor() ;
-    
+
     // from Processor
     void init() ;
-    void processEvent( EVENT::LCEvent * evt ) ; 
-    
-    // from EventModifier
-    const std::string & name() const ;
-    void modifyEvent( EVENT::LCEvent *evt ) ;
-    
+    void processEvent( EVENT::LCEvent * evt ) ;
+
    protected:
      Property<std::vector<int>> _evtList {this, "EventList",
               "event list - pairs of Eventnumber RunNumber" } ;
     ///< The event list as a set
     EventNumberSet        _evtSet {} ;
   };
-  
+
   //--------------------------------------------------------------------------
   //--------------------------------------------------------------------------
 
-  EventSelectorProcessor::EventSelectorProcessor() : 
+  EventSelectorProcessor::EventSelectorProcessor() :
     Processor("EventSelector") {
     // modify processor description
     _description = "EventSelectorProcessor returns true if given event was specified in EventList" ;
-  }
-
-  //--------------------------------------------------------------------------
-  
-  const std::string &EventSelectorProcessor::name() const {
-    return Processor::name() ; 
   }
 
   //--------------------------------------------------------------------------
@@ -77,13 +66,7 @@ namespace marlin {
       _evtSet.insert( std::make_pair( _evtList[i] , _evtList[ i+1 ] ) ) ;
     }
   }
-  
-  //--------------------------------------------------------------------------
-  
-  void EventSelectorProcessor::modifyEvent( EVENT::LCEvent *evt ) {
-    processEvent( evt ) ;
-  }
-  
+
   //--------------------------------------------------------------------------
 
   void EventSelectorProcessor::processEvent( EVENT::LCEvent * evt ) {
@@ -106,6 +89,3 @@ namespace marlin {
   // plugin declaration
   MARLIN_DECLARE_PROCESSOR( EventSelectorProcessor )
 }
-
-
-

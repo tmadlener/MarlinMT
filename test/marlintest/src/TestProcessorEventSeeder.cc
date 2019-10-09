@@ -107,13 +107,6 @@ void TestProcessorEventSeeder::processEvent( EVENT::LCEvent * evt ) {
 
 }
 
-
-
-void TestProcessorEventSeeder::check( LCEvent * ) {
-  // nothing to check here - could be used to fill checkplots in reconstruction processor
-}
-
-
 void TestProcessorEventSeeder::end(){
 
   streamlog_out(MESSAGE4) << name()

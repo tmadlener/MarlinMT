@@ -46,43 +46,41 @@ namespace marlin {
     _superSequence->init( app ) ;
     _logger->log<DEBUG5>() << "Creating processors ... OK" << std::endl ;
   }
-  
+
   //--------------------------------------------------------------------------
-  
+
   void SimpleScheduler::end() {
     _logger->log<MESSAGE>() << "Terminating application" << std::endl ;
     _superSequence->end() ;
     // print some statistics
     _superSequence->printStatistics( _logger ) ;
   }
-  
+
   //--------------------------------------------------------------------------
-  
+
   void SimpleScheduler::processRunHeader( std::shared_ptr<EVENT::LCRunHeader> rhdr ) {
-    _superSequence->modifyRunHeader( rhdr ) ;
     _superSequence->processRunHeader( rhdr ) ;
   }
-  
+
   //--------------------------------------------------------------------------
-  
+
   void SimpleScheduler::pushEvent( std::shared_ptr<EVENT::LCEvent> event ) {
     _currentEvent = event ;
     auto sequence = _superSequence->sequence(0) ;
-    sequence->modifyEvent( _currentEvent ) ;
     sequence->processEvent( _currentEvent ) ;
   }
-  
+
   //--------------------------------------------------------------------------
-  
+
   void SimpleScheduler::popFinishedEvents( std::vector<std::shared_ptr<EVENT::LCEvent>> &events ) {
     if( nullptr != _currentEvent ) {
       events.push_back( _currentEvent ) ;
       _currentEvent = nullptr ;
     }
   }
-  
+
   //--------------------------------------------------------------------------
-  
+
   std::size_t SimpleScheduler::freeSlots() const {
     return ( _currentEvent != nullptr ) ? 0 : 1 ;
   }

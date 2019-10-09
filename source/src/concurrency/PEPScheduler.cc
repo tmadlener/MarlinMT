@@ -64,7 +64,6 @@ namespace marlin {
       Output output {} ;
       output._event = event ;
       try {
-        _sequence->modifyEvent( event ) ;
         _sequence->processEvent( event ) ;
       }
       catch(...) {
@@ -223,7 +222,6 @@ namespace marlin {
         std::this_thread::sleep_for( std::chrono::microseconds(10) ) ;
       }
       auto rhdrStart = clock::now() ;
-      _superSequence->modifyRunHeader( rhdr ) ;
       _superSequence->processRunHeader( rhdr ) ;
       auto rhdrEnd = clock::now() ;
       _runHeaderTime += clock::time_difference<clock::seconds>( rhdrStart, rhdrEnd ) ;

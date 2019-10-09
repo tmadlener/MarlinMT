@@ -4,7 +4,6 @@
 #include <marlin/Processor.h>
 #include <marlin/Exceptions.h>
 #include <marlin/EventExtensions.h>
-#include <marlin/EventModifier.h>
 #include <marlin/StringParameters.h>
 #include <marlin/PluginManager.h>
 
@@ -45,22 +44,6 @@ namespace marlin {
 
   //--------------------------------------------------------------------------
 
-  void SequenceItem::modifyRunHeader( std::shared_ptr<EVENT::LCRunHeader> rhdr ) {
-    auto modifier = dynamic_cast<EventModifier*>( _processor.get() ) ;
-    if( nullptr == modifier ) {
-      return ;
-    }
-    if( nullptr != _mutex ) {
-      std::lock_guard<std::mutex> lock( *_mutex ) ;
-      modifier->modifyRunHeader( rhdr.get() ) ;
-    }
-    else {
-      modifier->modifyRunHeader( rhdr.get() ) ;
-    }
-  }
-
-  //--------------------------------------------------------------------------
-
   clock::pair SequenceItem::processEvent( std::shared_ptr<EVENT::LCEvent> event ) {
     if( nullptr != _mutex ) {
       auto start = clock::now() ;
@@ -77,33 +60,6 @@ namespace marlin {
       auto start = clock::now() ;
       _processor->processEvent( event.get() ) ;
       _processor->check( event.get() ) ;
-      auto end = clock::now() ;
-      return clock::pair(
-        clock::time_difference<clock::seconds>(start, end),
-        clock::time_difference<clock::seconds>(start, end)) ;
-    }
-  }
-
-  //--------------------------------------------------------------------------
-
-  clock::pair SequenceItem::modifyEvent( std::shared_ptr<EVENT::LCEvent> event ) {
-    auto modifier = dynamic_cast<EventModifier*>( _processor.get() ) ;
-    if( nullptr == modifier ) {
-      return clock::pair(0, 0) ;
-    }
-    if( nullptr != _mutex ) {
-      auto start = clock::now() ;
-      std::lock_guard<std::mutex> lock( *_mutex ) ;
-      auto start2 = clock::now() ;
-      modifier->modifyEvent( event.get() ) ;
-      auto end = clock::now() ;
-      return clock::pair(
-        clock::time_difference<clock::seconds>(start, end),
-        clock::time_difference<clock::seconds>(start2, end)) ;
-    }
-    else {
-      auto start = clock::now() ;
-      modifier->modifyEvent( event.get() ) ;
       auto end = clock::now() ;
       return clock::pair(
         clock::time_difference<clock::seconds>(start, end),
@@ -165,14 +121,6 @@ namespace marlin {
 
   //--------------------------------------------------------------------------
 
-  void Sequence::modifyRunHeader( std::shared_ptr<EVENT::LCRunHeader> rhdr ) {
-    for ( auto item : _items ) {
-      item->modifyRunHeader( rhdr ) ;
-    }
-  }
-
-  //--------------------------------------------------------------------------
-
   void Sequence::processEvent( std::shared_ptr<EVENT::LCEvent> event ) {
     try {
       auto extension = event->runtime().ext<ProcessorConditions>() ;
@@ -195,22 +143,6 @@ namespace marlin {
       else {
         iter->second ++;
       }
-    }
-  }
-
-  //--------------------------------------------------------------------------
-
-  void Sequence::modifyEvent( std::shared_ptr<EVENT::LCEvent> event ) {
-    auto extension = event->runtime().ext<ProcessorConditions>() ;
-    for ( auto item : _items ) {
-      // check runtime condition
-      if ( not extension->check( item->name() ) ) {
-        continue ;
-      }
-      auto clockMeas = item->modifyEvent( event ) ;
-      auto iter = _clockMeasures.find( item->name() ) ;
-      iter->second._appClock += clockMeas.first / static_cast<double>( CLOCKS_PER_SEC ) ;
-      iter->second._procClock += clockMeas.second / static_cast<double>( CLOCKS_PER_SEC ) ;
     }
   }
 
@@ -337,14 +269,6 @@ namespace marlin {
   void SuperSequence::processRunHeader( std::shared_ptr<EVENT::LCRunHeader> rhdr ) {
     for( auto item : _uniqueItems ) {
       item->processRunHeader( rhdr ) ;
-    }
-  }
-
-  //--------------------------------------------------------------------------
-
-  void SuperSequence::modifyRunHeader( std::shared_ptr<EVENT::LCRunHeader> rhdr ) {
-    for( auto item : _uniqueItems ) {
-      item->modifyRunHeader( rhdr ) ;
     }
   }
 
