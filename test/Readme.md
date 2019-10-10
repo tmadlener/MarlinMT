@@ -1,29 +1,17 @@
-##################################################
-#
-#  Marlin Test code 
-#
-#################################################
+## Marlin testing
 
+To run unit tests, make sure the CMake switch is on:
 
- subdirectories:
+```shell
+cmake -DBUILD_TESTING=ON [OTHER OPTIONS] ..
+```
 
+You can run test after compilation using:
 
-marlintest:
-   - Marlin test processors 
-   - will be compiled into a library: libmarlintest.so (dylib)
-   - add new test processors here
-
- testmarlin
-   - actual tests
-   - tests need to be defined in the CMakeList.txt
-   - auxilliary files (gear, steering slcio etc) go here
-
-
- usage:
-
-  in the Marlin build directory type:
-
-   make test 
-
-  after make install
-
+```shell
+# install step is optional before running tests
+make # install
+# use --output-on-failure in case a test
+# is failing, then you get the standard output
+ctest --output-on-failure
+```
