@@ -136,9 +136,12 @@ INSTALL( FILES "${PROJECT_SOURCE_DIR}/source/python/compareMarlinSteeringFiles.p
 # -----------------------------------------------------------------------------
 
 
-ADD_SUBDIRECTORY( ./source )
+ADD_SUBDIRECTORY( source )
 ##########################################################################
-ADD_SUBDIRECTORY( ./test )
+
+IF( BUILD_TESTING )
+  ADD_SUBDIRECTORY( test )
+ENDIF()
 
 
 # display some variables and write them to cache

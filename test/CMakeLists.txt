@@ -1,11 +1,70 @@
-##################################################################################
 #
-#    Marlin tests
+# CMakeLists.txt for MarlinMT unit tests
 #
-##################################################################################
+# @author: Remi Ete, DESY
+# @date: Oct 2019
+#
 
-# build the marlintest plugin library
-ADD_SUBDIRECTORY( ./marlintest )
+list( APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake )
+include( MarlinUnitTesting )
 
-# the actual tests  
-ADD_SUBDIRECTORY( ./testmarlin )
+# include directories
+include_directories( BEFORE ./include ${PROJECT_SOURCE_DIR}/source/include  ${PROJECT_BINARY_DIR} )
+
+# add unit test library
+aux_source_directory( ./processors library_sources )
+add_shared_library( MarlinUnitTest ${library_sources} )
+target_link_libraries( MarlinUnitTest Marlin )
+
+# Add unit tests
+marlin_add_test (
+  test-thread-pool
+  BUILD_EXEC
+  REGEX_FAIL "TEST_FAILED"
+)
+
+marlin_add_test (
+  test-clock
+  BUILD_EXEC
+  REGEX_FAIL "TEST_FAILED"
+)
+
+marlin_add_test (
+  marlinminusx
+  COMMAND ${EXECUTABLE_OUTPUT_PATH}/Marlin
+  EXEC_ARGS -x test_marlinminusx.xml
+  REGEX_PASS NONE
+)
+
+marlin_add_test (
+  check-marlinminusx
+  COMMAND cat
+  EXEC_ARGS test_marlinminusx.xml
+  REGEX_PASS "<parameter name=\"RandomSeed\" value=\"1234567890\" />"
+  DEPENDS marlinminusx
+)
+
+marlin_add_processor_test (
+  eventmodifier
+  STEERING_FILE ${CMAKE_CURRENT_SOURCE_DIR}/steer/eventmodifier.xml
+  INPUT_FILES ${CMAKE_CURRENT_SOURCE_DIR}/data/simjob.slcio
+  REGEX_PASS "TestEventModifier modified 3 events in 1 run"
+)
+
+marlin_add_processor_test (
+  processoreventseeder
+  STEERING_FILE ${CMAKE_CURRENT_SOURCE_DIR}/steer/processoreventseeder.xml
+  INPUT_FILES ${CMAKE_CURRENT_SOURCE_DIR}/data/simjob.slcio
+  REGEX_PASS "TestProcessorEventSeeder failed to register processor to event seed generator"
+  REGEX_FAIL "ERROR .TestProcessorEventSeeder.* Seeds don't match"
+)
+
+marlin_add_processor_test (
+  includeandconstants
+  STEERING_FILE ${CMAKE_CURRENT_SOURCE_DIR}/steer/base-eventmodifier.xml
+  INPUT_FILES
+    ${CMAKE_CURRENT_SOURCE_DIR}/data/simjob.slcio
+    ${CMAKE_CURRENT_SOURCE_DIR}/steer/include-eventmodifier.xml
+    ${CMAKE_CURRENT_SOURCE_DIR}/steer/constants-eventmodifier.xml
+  REGEX_PASS "TestEventModifier modified 3 events in 1 run"
+)
