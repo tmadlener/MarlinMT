@@ -1,19 +1,55 @@
-#include "TestProcessorEventSeeder.h"
 
-// ----- include for verbosity dependend logging ---------
+// -- marlin headers
+#include "marlin/Processor.h"
 #include "marlin/Logging.h"
 #include "marlin/ProcessorApi.h"
 #include "marlin/PluginManager.h"
 
+// -- lcio headers
 #include "IMPL/LCEventImpl.h"
 #include "IMPL/LCRunHeaderImpl.h"
 
-using namespace lcio ;
+using namespace EVENT ;
+using namespace IMPL ;
 using namespace marlin ;
 
 
-// TestProcessorEventSeeder aTestProcessorEventSeeder ;
+/**  test processor for testing the uniquie event seeding functionality of the ProcessorEventSeeder service in Marlin.
+ *
+ *
+ * @author S. J. Aplin, DESY
+ */
 
+class TestProcessorEventSeeder : public Processor {
+ public:
+
+  TestProcessorEventSeeder() ;
+
+ /** Called at the begin of the job before anything is read.
+   * Use to initialize the processor, e.g. book histograms.
+   */
+  void init() ;
+
+  /** Called for every run.
+   */
+  void processRunHeader( LCRunHeader* run ) ;
+
+  /** Called for every event - the working horse.
+   */
+  void processEvent( LCEvent * evt ) ;
+
+  /** Called after data processing for clean up.
+   */
+  void end() ;
+
+protected:
+  std::map< unsigned long long, unsigned int>  _seeds {} ;
+  int _nRun = {0} ;
+  int _nEvt = {0} ;
+} ;
+
+//--------------------------------------------------------------------------
+//--------------------------------------------------------------------------
 
 TestProcessorEventSeeder::TestProcessorEventSeeder() : Processor("TestProcessorEventSeeder") {
 
@@ -25,24 +61,21 @@ TestProcessorEventSeeder::TestProcessorEventSeeder() : Processor("TestProcessorE
 
 }
 
+//--------------------------------------------------------------------------
 
 void TestProcessorEventSeeder::init() {
-
   ProcessorApi::registerForRandomSeeds( this ) ;
-
-  _nRun = 0 ;
-  _nEvt = 0 ;
 }
 
+//--------------------------------------------------------------------------
 
 void TestProcessorEventSeeder::processRunHeader( EVENT::LCRunHeader* ) {
-
   ++_nRun ;
-
 }
 
-void TestProcessorEventSeeder::processEvent( EVENT::LCEvent * evt ) {
+//--------------------------------------------------------------------------
 
+void TestProcessorEventSeeder::processEvent( EVENT::LCEvent * evt ) {
 
   streamlog_out(DEBUG) << "   processing event: " << evt->getEventNumber()
 		       << "   in run:  " << evt->getRunNumber()
@@ -56,10 +89,10 @@ void TestProcessorEventSeeder::processEvent( EVENT::LCEvent * evt ) {
 			    << evt->getEventNumber()
 			    << std::endl;
 
-  try{
+  try {
     ProcessorApi::registerForRandomSeeds( this ) ;
   }
-  catch( marlin::Exception ) {
+  catch( marlin::Exception& ) {
     log<ERROR>() << name() << " failed to register processor to event seed generator (TEST is OK)" << std::endl ;
   }
 
@@ -94,18 +127,11 @@ void TestProcessorEventSeeder::processEvent( EVENT::LCEvent * evt ) {
 			   << std::endl ;
 
     }
-
   }
-
-//  if( _nEvt > 10 ) {
-
-  //  streamlog_out(ERROR)  << " processEvent LCEvent::eventNumber not modified ! "  << std::endl;
-
-  //-- note: this will not be printed if compiled w/o MARLINDEBUG=1 !
-
   ++_nEvt ;
-
 }
+
+//--------------------------------------------------------------------------
 
 void TestProcessorEventSeeder::end(){
 
