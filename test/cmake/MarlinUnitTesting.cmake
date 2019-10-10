@@ -9,7 +9,7 @@
 #
 # Function to add a unit test from the src directory
 #
-function ( MARLIN_ADD_TEST test_name )
+function ( marlin_add_test test_name )
   cmake_parse_arguments(ARG "BUILD_EXEC" "" "COMMAND;DEPENDS;EXEC_ARGS;REGEX_PASS;REGEX_PASSED;REGEX_FAIL;REGEX_FAILED;REQUIRES" ${ARGN} )
   set ( missing )
   set ( use_test 1 )
@@ -59,7 +59,7 @@ endfunction()
 #
 #
 #
-function( MARLIN_ADD_PROCESSOR_TEST test_name )
+function( marlin_add_processor_test test_name )
   cmake_parse_arguments(ARG "" "STEERING_FILE;REGEX_PASS;REGEX_FAIL" "INPUT_FILES;MARLIN_ARGS" ${ARGN} )
   if( NOT test_name )
     message( FATAL_ERROR "[UNIT_TESTS] Configuring processor test without name" )
