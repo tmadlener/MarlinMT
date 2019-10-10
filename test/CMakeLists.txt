@@ -12,7 +12,7 @@ include( MarlinUnitTesting )
 include_directories( BEFORE ./include ${PROJECT_SOURCE_DIR}/source/include  ${PROJECT_BINARY_DIR} )
 
 # add unit test library
-aux_source_directory( ./src library_sources )
+aux_source_directory( ./processors library_sources )
 add_shared_library( MarlinUnitTest ${library_sources} )
 target_link_libraries( MarlinUnitTest Marlin )
 
