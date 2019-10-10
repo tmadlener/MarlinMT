@@ -1,23 +1,54 @@
-#include "TestEventModifier.h"
 
-// ----- include for verbosity dependend logging ---------
+// --  marlin headers
+#include "marlin/Processor.h"
 #include "marlin/Logging.h"
 #include "marlin/PluginManager.h"
 
+// -- lcio headers
 #include "IMPL/LCEventImpl.h"
 #include "IMPL/LCRunHeaderImpl.h"
 
-using namespace lcio ;
 using namespace marlin ;
+using namespace EVENT ;
+using namespace IMPL ;
 
+/**
+ * Example processor to event / run modification
+ *
+ * @author F. Gaede, DESY
+ * @version $Id: TestEventModifier.h,v 1.4 2005-10-11 12:57:39 gaede Exp $
+ */
+class TestEventModifier : public Processor {
+ public:
+  TestEventModifier() ;
 
-// TestEventModifier aTestEventModifier ;
+  /** Called for every run.
+   */
+  void processRunHeader( LCRunHeader* run ) ;
 
+  /** Called for every event - the working horse.
+   */
+  void processEvent( LCEvent * evt ) ;
 
-TestEventModifier::TestEventModifier() : Processor("TestEventModifier") {
+  /** Called after data processing for clean up.
+   */
+  void end() ;
+
+ protected:
+  int _nRun = {0} ;
+  int _nEvt = {0} ;
+} ;
+
+//--------------------------------------------------------------------------
+//--------------------------------------------------------------------------
+
+TestEventModifier::TestEventModifier() :
+  Processor("TestEventModifier") {
   // modify processor description
   _description = "TestEventModifier make changes to the run header and the event data for testing" ;
 }
+
+//--------------------------------------------------------------------------
 
 void TestEventModifier::processRunHeader( LCRunHeader* run) {
 
@@ -36,8 +67,12 @@ void TestEventModifier::processRunHeader( LCRunHeader* run) {
   }
 }
 
+//--------------------------------------------------------------------------
+
 void TestEventModifier::processEvent( LCEvent * e ) {
+
   LCEventImpl* evt = dynamic_cast<LCEventImpl*>( e ) ;
+
   try {
 
     if( evt != 0 ){
@@ -52,11 +87,12 @@ void TestEventModifier::processEvent( LCEvent * e ) {
   }
 }
 
+//--------------------------------------------------------------------------
+
 void TestEventModifier::end() {
   streamlog_out(MESSAGE4) << name()
 			  << " modified " << _nEvt << " events in " << _nRun << " run "
 			  << std::endl ;
 }
-
 
 MARLIN_DECLARE_PROCESSOR( TestEventModifier )
