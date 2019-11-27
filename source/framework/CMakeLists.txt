@@ -81,18 +81,7 @@ marlin_add_plugin_library( TARGETS CorePlugins )
 set( MarlinMT_BINARIES MarlinShellCompletion MarlinDumpPlugins Marlin MarlinMT )
 foreach( binary ${MarlinMT_BINARIES} )
   add_executable( bin_${binary} main/${binary}.cc )
-  target_include_directories( 
-    bin_${binary} SYSTEM BEFORE PUBLIC
-    $<TARGET_PROPERTY:Marlin::Core,INCLUDE_DIRECTORIES>
-  )
   target_link_libraries( bin_${binary} Marlin::Core )
-  set_target_properties( 
-    bin_${binary} 
-    PROPERTIES 
-      OUTPUT_NAME ${binary}
-      COMPILE_FLAGS ${MARLIN_COMPILE_OPTIONS} 
-      CXX_STANDARD ${MARLIN_CXX_STANDARD}
-  )
   install( TARGETS bin_${binary} RUNTIME )
 endforeach()
 
