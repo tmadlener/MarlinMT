@@ -3,20 +3,40 @@
 # @author Remi Ete, DESY
 #################################
 
-FIND_PACKAGE( LCIO REQUIRED )
+find_package( LCIO REQUIRED )
 
-# include directories
-include_directories( BEFORE include )
-include_directories( SYSTEM BEFORE ${LCIO_INCLUDE_DIRS} )
+marlin_add_doxygen_sources( GLOB_RECURSE DIRECTORY include MATCHING_PATTERN *.h )
+marlin_add_doxygen_sources( GLOB_RECURSE DIRECTORY src MATCHING_PATTERN *.cc )
+marlin_add_doxygen_sources( GLOB_RECURSE DIRECTORY plugins MATCHING_PATTERN *.cc )
 
-# install header files
-FILE( GLOB lcio_plugin_headers ${CMAKE_CURRENT_SOURCE_DIR}/include/marlin/lcio/*.h )
-INSTALL( FILES ${lcio_plugin_headers} DESTINATION include/marlin/lcio )
+aux_source_directory( src LCIOPlugins_sources )
+aux_source_directory( plugins LCIOPlugins_sources )
 
-AUX_SOURCE_DIRECTORY( src lcio_plugin_sources )
-AUX_SOURCE_DIRECTORY( plugins lcio_plugin_sources )
+add_library( LCIOPlugins MODULE ${LCIOPlugins_sources} )
+add_library( Marlin::LCIOPlugins ALIAS LCIOPlugins )
+set_target_properties( LCIOPlugins PROPERTIES OUTPUT_NAME MarlinLCIOPlugins )
+install( TARGETS LCIOPlugins LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR} )
 
-# create library
-ADD_SHARED_LIBRARY( MarlinLCIO ${lcio_plugin_sources} )
-INSTALL_SHARED_LIBRARY( MarlinLCIO DESTINATION lib )
-TARGET_LINK_LIBRARIES( MarlinLCIO Marlin ${LCIO_LIBRARIES}  )
+target_include_directories( 
+  LCIOPlugins SYSTEM PUBLIC
+  $<BUILD_INTERFACE:${LCIO_INCLUDE_DIRS}>
+)
+target_include_directories( 
+  LCIOPlugins BEFORE PUBLIC 
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+)
+target_link_libraries( 
+  LCIOPlugins PUBLIC
+  Marlin::Core
+  ${LCIO_LIBRARIES}
+)
+set_target_properties( 
+  LCIOPlugins
+  PROPERTIES 
+    COMPILE_FLAGS ${MARLIN_COMPILE_OPTIONS}
+    VERSION ${${PROJECT_NAME}_VERSION}
+    CXX_STANDARD ${MARLIN_CXX_STANDARD}
+)
+
+# Add MarlinLCIO library to list of MARLIN_DLL libraries
+marlin_add_plugin_library( TARGETS LCIOPlugins )
