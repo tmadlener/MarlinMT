@@ -6,9 +6,6 @@ find_package( ILCUTIL COMPONENTS streamlog REQUIRED )
 find_package( Marlin REQUIRED )
 
 add_executable( simple simple.cc )
-target_include_directories( simple SYSTEM PUBLIC 
-  $<TARGET_PROPERTY:Marlin::MarlinCore,INCLUDE_DIRECTORIES> 
-  ${streamlog_INCLUDE_DIRS}
-)
-target_link_libraries( simple Marlin::MarlinCore )
+target_link_libraries( simple Marlin::Core )
 
+target_include_directories( simple SYSTEM PUBLIC ${streamlog_INCLUDE_DIRS} )
