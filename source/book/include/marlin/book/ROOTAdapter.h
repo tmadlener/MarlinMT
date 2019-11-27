@@ -53,7 +53,7 @@ namespace marlin {
       /// often used Histograms Instance.
       using RH3I = ROOT::Experimental::RH3I ;
 
-#if ROOT_VERSION_CODE > ROOT_VERSION(16,18,4)
+#if ROOT_VERSION_CODE > ROOT_VERSION(6,18,4)
       template<typename T>
       using CoordArraySpan_t = std::span<typename T::CoordArray_t const>;
 
