@@ -30,13 +30,6 @@ target_link_libraries(
   Marlin::Core
   ${LCIO_LIBRARIES}
 )
-set_target_properties( 
-  LCIOPlugins
-  PROPERTIES 
-    COMPILE_FLAGS ${MARLIN_COMPILE_OPTIONS}
-    VERSION ${${PROJECT_NAME}_VERSION}
-    CXX_STANDARD ${MARLIN_CXX_STANDARD}
-)
 
 # Add MarlinLCIO library to list of MARLIN_DLL libraries
 marlin_add_plugin_library( TARGETS LCIOPlugins )
