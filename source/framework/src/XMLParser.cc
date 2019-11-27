@@ -1,7 +1,6 @@
 
 #include "marlin/XMLParser.h"
 #include "marlin/Exceptions.h"
-#include "marlin/tinyxml.h"
 #include "marlin/Utils.h"
 
 #include <algorithm>
