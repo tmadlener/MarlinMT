@@ -85,7 +85,7 @@ namespace marlin {
       size_t idx = library.find_last_of("/") ;
       // the library basename, i.e. /path/to/libBlah.so --> libBlah.so
       std::string libBaseName( library.substr( idx + 1 ) );
-      _logger->log<DEBUG5>() << "<!-- Loading shared library : " << library << " -->" << std::endl ;
+      _logger->log<MESSAGE>() << "<!-- Loading shared library : " << library << " -->" << std::endl ;
       auto inserted = checkDuplicateLibs.insert( libBaseName ).second ;
       if ( not inserted ) {
         _logger->log<ERROR>() << std::endl << "<!-- ERROR loading shared library : " << library << std::endl
