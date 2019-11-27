@@ -80,10 +80,10 @@ namespace marlin {
     /**
      *  @brief  Get the geometry handle as a given type
      *
-     *  @param  proc the processor instance initiating the call
+     *  @param  proc the processor accessing the geometry
      */
-    template <typename T>
-    static T *geometry( const Processor *const proc ) ;
+    template <typename HANDLER>
+    static const HANDLER* geometry( const Processor *const proc ) ;
 
     /**
      *  @brief  Notify the application to skip the current event processing
@@ -106,8 +106,8 @@ namespace marlin {
   //--------------------------------------------------------------------------
 
   template <typename T>
-  inline T *ProcessorApi::geometry( const Processor *const proc ) {
-    return proc->app().geometryManager().geometry<T>() ;
+  inline const HANDLER* ProcessorApi::geometry( const Processor *const proc ) {
+    return proc->app().geometryManager().geometry<HANDLER>() ;
   }
 
 }
