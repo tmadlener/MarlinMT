@@ -221,10 +221,7 @@ namespace marlin {
     out << "   | |  | | (_| | |  | | | | | |" << std::endl ;
     out << "   |_|  |_|\\__,_|_|  |_|_|_| |_|" << std::endl ;
     out << std::endl ;
-    out << "         Version: "
-      << MARLIN_MAJOR_VERSION << "."
-      << MARLIN_MINOR_VERSION << "."
-      << MARLIN_PATCH_LEVEL << std::endl ;
+    out << "         Version: " << MARLIN_RELEASE << std::endl ;
     out << std::endl ;
     out << "         LICENCE: GPLv3 " << std::endl ;
     out << "    Copyright (C), Marlin Authors" << std::endl ;
