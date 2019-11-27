@@ -105,7 +105,7 @@ namespace marlin {
   //--------------------------------------------------------------------------
   //--------------------------------------------------------------------------
 
-  template <typename T>
+  template <typename HANDLER>
   inline const HANDLER* ProcessorApi::geometry( const Processor *const proc ) {
     return proc->app().geometryManager().geometry<HANDLER>() ;
   }
