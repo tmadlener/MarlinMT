@@ -16,4 +16,11 @@ then
   source $MARLIN_DIR/bin/marlin-completion.bash
 fi
 
+FRAMEWORK_MARLIN_DLL=@CMAKE_MARLIN_DLL@
+
+if [ "${FRAMEWORK_MARLIN_DLL}" != "" ]
+then
+  export MARLIN_DLL=${FRAMEWORK_MARLIN_DLL}
+fi
+
 #
