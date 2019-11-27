@@ -3,7 +3,7 @@
 
 #include "IParser.h"
 #include "StringParameters.h"
-#include "marlin/tinyxml.h"
+#include <tinyxml.h>
 
 #include <fstream>
 #include <string>
