@@ -22,13 +22,6 @@ foreach( dir ${GEAR_INCLUDE_DIRS} )
   )
 endforeach()
 target_link_libraries( GearPlugins PUBLIC Marlin::Core ${GEAR_LIBRARIES} )
-set_target_properties( 
-  GearPlugins
-  PROPERTIES 
-    COMPILE_FLAGS ${MARLIN_COMPILE_OPTIONS}
-    VERSION ${${PROJECT_NAME}_VERSION}
-    CXX_STANDARD ${MARLIN_CXX_STANDARD}
-)
 
 # Add MarlinGear library to list of MARLIN_DLL libraries
 marlin_add_plugin_library( TARGETS GearPlugins )
