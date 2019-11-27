@@ -1,10 +1,6 @@
 ##############################################################################
 # cmake configuration file for Marlin
 #
-# requires:
-#   MacroCheckPackageLibs.cmake for checking package libraries
-#   MacroExportPackageDeps.cmake for exporting package dependencies
-#
 # returns following variables:
 #
 #   Marlin_FOUND      : set to TRUE if Marlin found
@@ -12,75 +8,66 @@
 #       Marlin_FOUND is only set to TRUE if ALL components are also found
 #       if REQUIRED is NOT set components may or may not be available
 #
-#   Marlin_ROOT       : path to this Marlin installation
-#   Marlin_VERSION    : package version
-#   Marlin_LIBRARIES  : list of Marlin libraries (NOT including COMPONENTS)
-#   Marlin_INCLUDE_DIRS  : list of paths to be used with INCLUDE_DIRECTORIES
-#   Marlin_LIBRARY_DIRS  : list of paths to be used with LINK_DIRECTORIES
-#   Marlin_COMPONENT_LIBRARIES      : list of Marlin component libraries
+#   Marlin_ROOT                     : path to this Marlin installation
+#   Marlin_VERSION                  : package version
+#   Marlin_BUILD_CXX_STANDARD       : CXX standard with which Marlin was built
+#   Marlin::Core                    : the Marlin core imported library target
+#   Marlin::${COMPONENT}            : the Marlin component imported library target
 #   Marlin_${COMPONENT}_FOUND       : set to TRUE or FALSE for each library
-#   Marlin_${COMPONENT}_LIBRARY     : path to individual libraries
-#   Marlin_${COMPONENT}_LIB_DEPENDS : individual library dependencies
 #
-# @author Jan Engels, Desy
+# @author Remi Ete, DESY
 ##############################################################################
 
-SET( Marlin_ROOT "@CMAKE_INSTALL_PREFIX@" )
-SET( Marlin_VERSION "@Marlin_VERSION@" )
 
+@PACKAGE_INIT@
 
-# ---------- include dirs -----------------------------------------------------
-# do not store find results in cache
-SET( Marlin_INCLUDE_DIRS Marlin_INCLUDE_DIRS-NOTFOUND )
-MARK_AS_ADVANCED( Marlin_INCLUDE_DIRS )
+set( Marlin_FOUND TRUE )
 
-FIND_PATH( Marlin_INCLUDE_DIRS
-	NAMES marlin/Processor.h
-	PATHS ${Marlin_ROOT}/include
-	NO_DEFAULT_PATH
-)
+set( Marlin_ROOT                     @CMAKE_INSTALL_PREFIX@ )
+set( Marlin_VERSION                  @Marlin_VERSION@ )
+set( Marlin_BUILD_CXX_STANDARD       @CMAKE_CXX_STANDARD@ )
+set_and_check( Marlin_INCLUDE_DIRS   @PACKAGE_CMAKE_INSTALL_INCLUDEDIR@ )
+set_and_check( Marlin_LIBRARY_DIR    @PACKAGE_CMAKE_INSTALL_LIBDIR@ )
 
+# Import Marlin targets in Marlin:: namespace
+include( ${CMAKE_CURRENT_LIST_DIR}/MarlinConfig-targets.cmake )
 
+# Marlin::Core is a mandatory target
+if( NOT TARGET Marlin::Core )
+	message( FATAL_ERROR "Couldn't import Marlin::Core library!" )
+endif()
 
-# ---------- libraries --------------------------------------------------------
-INCLUDE( "@ILCSOFT_CMAKE_MODULES_ROOT@/MacroCheckPackageLibs.cmake" )
+set( Marlin_MISSING_COMPONENTS )
+foreach( comp ${Marlin_FIND_COMPONENTS} )
+	# The component can a normal library target
+	if( NOT TARGET Marlin::${comp} )
+		# In Marlin, plugin libraries (MODULE) are not exported
+		# to avoid unnecessary linking from user and double counting 
+		# of plugins at runtime.
+		# So here we just check if we have a library up there
+		if( "${comp}" MATCHES ".*Plugins$" )
+			find_library( Marlin_${comp}_MODULE Marlin${comp} PATHS ${Marlin_LIBRARY_DIR} NO_DEFAULT_PATH )
+			if( NOT Marlin_${comp}_MODULE )
+				list( APPEND Marlin_MISSING_COMPONENTS ${comp} )	
+			else()
+				set( Marlin_${comp}_FOUND TRUE )
+			endif()
+			# In any case, reset the cache variable
+			set( Marlin_${comp}_MODULE )
+		else()
+			list( APPEND Marlin_MISSING_COMPONENTS ${comp} )			
+		endif()
+	else()
+		set( Marlin_${comp}_FOUND TRUE )
+	endif()
+endforeach()
 
-# only standard libraries should be passed as arguments to CHECK_PACKAGE_LIBS
-# additional components are set by cmake in variable PKG_FIND_COMPONENTS
-# first argument should be the package name
-CHECK_PACKAGE_LIBS( Marlin Marlin MarlinXML )
+check_required_components( Marlin )
 
-
-
-# ---------- dependencies -----------------------------------------------------
-INCLUDE( "@ILCSOFT_CMAKE_MODULES_ROOT@/MacroExportPackageDeps.cmake" )
-# exports following package dependencies (if set)
-# first argument of macro should be the package name
-SET( Marlin_DEPENDS_INCLUDE_DIRS  @Marlin_DEPENDS_INCLUDE_DIRS@ )
-SET( Marlin_DEPENDS_LIBRARY_DIRS  @Marlin_DEPENDS_LIBRARY_DIRS@ )
-SET( Marlin_DEPENDS_LIBRARIES  @Marlin_DEPENDS_LIBRARIES@ )
-EXPORT_PACKAGE_DEPENDENCIES( Marlin )
-
-
-
-# ---------- final checking ---------------------------------------------------
-INCLUDE( FindPackageHandleStandardArgs )
-# set MARLIN_FOUND to TRUE if all listed variables are TRUE and not empty
-# Marlin_COMPONENT_VARIABLES will be set if FIND_PACKAGE is called with REQUIRED argument
-FIND_PACKAGE_HANDLE_STANDARD_ARGS( Marlin DEFAULT_MSG Marlin_ROOT Marlin_INCLUDE_DIRS Marlin_LIBRARIES ${Marlin_COMPONENT_VARIABLES} )
-
-SET( Marlin_FOUND ${MARLIN_FOUND} )
-
-
-
-# ---------- definitions ------------------------------------------------------
-IF( MARLIN_FOUND )
-
-    IF( CMAKE_BUILD_TYPE STREQUAL "Debug" OR
-        CMAKE_BUILD_TYPE STREQUAL "RelWithDebInfo" )
-        SET( Marlin_DEFINITIONS "-DMARLINDEBUG" )
-        MARK_AS_ADVANCED( Marlin_DEFINITIONS )
-    ENDIF()
-
-ENDIF()
-
+if( NOT Marlin_FIND_QUIET AND Marlin_MISSING_COMPONENTS )
+	if( Marlin_FIND_REQUIRED )
+		message( FATAL_ERROR "Marlin not found. Missing components: ${Marlin_MISSING_COMPONENTS}" )
+	else()
+		message( WARNING "Marlin: some components are missing: ${Marlin_MISSING_COMPONENTS}" )
+	endif()
+endif()
