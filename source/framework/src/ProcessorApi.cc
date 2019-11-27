@@ -2,8 +2,6 @@
 
 // -- marlin headers
 #include <marlin/Exceptions.h>
-#include <marlin/Application.h>
-#include <marlin/Processor.h>
 #include <marlin/EventExtensions.h>
 
 namespace marlin {
