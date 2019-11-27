@@ -14,7 +14,6 @@ endif()
 add_library( UnitTest SHARED ${MarlinUnitTest_sources} )
 add_library( Marlin::UnitTest ALIAS UnitTest )
 set_target_properties( UnitTest PROPERTIES OUTPUT_NAME MarlinUnitTest )
-target_include_directories( UnitTest SYSTEM BEFORE PUBLIC $<TARGET_PROPERTY:Marlin::Core,INCLUDE_DIRECTORIES> )
 target_link_libraries( UnitTest PUBLIC Marlin::Core )
 set_target_properties( 
   UnitTest
