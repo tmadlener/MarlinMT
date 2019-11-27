@@ -15,13 +15,6 @@ add_library( UnitTest SHARED ${MarlinUnitTest_sources} )
 add_library( Marlin::UnitTest ALIAS UnitTest )
 set_target_properties( UnitTest PROPERTIES OUTPUT_NAME MarlinUnitTest )
 target_link_libraries( UnitTest PUBLIC Marlin::Core )
-set_target_properties( 
-  UnitTest
-  PROPERTIES 
-    COMPILE_FLAGS ${MARLIN_COMPILE_OPTIONS}
-    VERSION ${${PROJECT_NAME}_VERSION}
-    CXX_STANDARD ${MARLIN_CXX_STANDARD}
-)
 if( MARLIN_LCIO )
   target_include_directories( UnitTest SYSTEM PUBLIC ${LCIO_INCLUDE_DIRS} )
   target_link_libraries( UnitTest PUBLIC ${LCIO_LIBRARIES} )
