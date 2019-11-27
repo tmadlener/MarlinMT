@@ -5,7 +5,6 @@
 
 
 # Find ROOT package
-set( ROOT_CONFIG_DEBUG True )
 set( ROOT_COMPONENTS Hist RIO )
 find_package( ROOT 6.18 COMPONENTS ${ROOT_COMPONENTS} REQUIRED )
 foreach( comp ${ROOT_COMPONENTS} )
@@ -24,11 +23,6 @@ add_library( Marlin::Book ALIAS Book )
 set_target_properties( Book PROPERTIES OUTPUT_NAME MarlinBook )
 install( TARGETS Book EXPORT Marlin LIBRARY )
 
-# Dependencies include dirs as system one to avoid unnecessary warnings
-target_include_directories( 
-  Book SYSTEM PUBLIC 
-  $<BUILD_INTERFACE:${ROOT_INCLUDE_DIRS}>
-)
 target_include_directories( 
   Book BEFORE PUBLIC 
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
@@ -37,14 +31,7 @@ target_include_directories(
 target_link_libraries(
   Book PUBLIC
   Marlin::Core
-  ${ROOT_LIBRARIES} ${ROOT_COMPONENTS_LIBRARIES}
-)
-set_target_properties( 
-  Book
-  PROPERTIES 
-    COMPILE_FLAGS ${MARLIN_COMPILE_OPTIONS}
-    VERSION ${${PROJECT_NAME}_VERSION}
-    CXX_STANDARD ${MARLIN_CXX_STANDARD}
+  ROOT::Core ROOT::RIO ROOT::Hist
 )
 install( DIRECTORY include/marlin TYPE INCLUDE )
 
