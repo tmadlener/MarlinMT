@@ -9,6 +9,7 @@ nav:
       - Introduction: 'user-manual/introduction.md'
       - Installation: 'user-manual/installation.md'
       - Getting started: 'user-manual/getting-started.md'
+      - Compiling your project with CMake: 'user-manual/cmake.md'
       - Geometry: 'user-manual/geometry.md'
       - Data source: 'user-manual/data-source.md'
       - XML parser: 'user-manual/xml-parser.md'
@@ -26,3 +27,5 @@ plugins:
         - doxygen:
             url : doc/mkdoxygen
 theme: mkdocs
+markdown_extensions:
+  - codehilite
