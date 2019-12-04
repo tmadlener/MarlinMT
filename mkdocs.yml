@@ -25,7 +25,7 @@ plugins:
   - doxygen:
       packages:
         - doxygen:
-            url : doc/mkdoxygen
+            url : doc
 theme: mkdocs
 markdown_extensions:
   - codehilite
