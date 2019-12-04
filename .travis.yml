@@ -8,6 +8,7 @@ language: cpp
 
 before_install:
   - sudo apt-get -y install python-pip
+  - pip install --upgrade pip
 
 install:
   - pip install mkdocs mkdocs-material pymdown-extensions pygments
