@@ -17,7 +17,7 @@ script:
   - docker exec -it CI_container /bin/bash -c "/Package/.travis-ci.d/compile_and_test.sh"
 
 # deploy mkdocs documentation
-on_success:
+after_success:
   - if [[ "${TRAVIS_EVENT_TYPE}" != "cron" && "${TRAVIS_EVENT_TYPE}" != "pull_request" && "${TRAVIS_REPO_SLUG%/*}" == "iLCSoft" && -z ${TRAVIS_TAG} ]];
     then cd Package; git remote rm origin; git remote add origin https://rete:$GITHUB_TOKEN@github.com/$TRAVIS_REPO_SLUG.git; docker exec -it CI_container -w /Package /bin/bash -c "mkdocs gh-deploy";
     fi
