@@ -27,17 +27,11 @@ script:
   - docker run -it --name CI_container -v $PKGDIR:/Package -d rete/marlinmt-ci
   - docker exec -it CI_container /bin/bash -c "/Package/.travis-ci.d/compile_and_test.sh"
 
-before_deploy:
-  - cd Package
-  - mkdocs build --verbose --clean # Build a local version of the docs
-
-deploy: # Deploy documentation to Github in the gh_pages branch
-  provider: pages
-  skip_cleanup: true
-  github_token: $GITHUB_TOKEN
-  local_dir: site
-  on:
-    branch: master
+# deploy mkdocs documentation
+on_success:
+  - if [[ "${TRAVIS_EVENT_TYPE}" != "cron" && "${TRAVIS_EVENT_TYPE}" != "pull_request" && "${TRAVIS_REPO_SLUG%/*}" == "iLCSoft" && -z ${TRAVIS_TAG} ]];
+    then cd Package; git remote rm origin; git remote add origin https://rete:$GITHUB_TOKEN@github.com/$TRAVIS_REPO_SLUG.git; docker exec -it CI_container -w /Package /bin/bash -c "mkdocs gh-deploy";
+    fi
 
 # Don't send e-mail notifications
 notifications:
