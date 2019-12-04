@@ -5,7 +5,7 @@ source $HOME/setup.sh
 cd /Package
 mkdir build
 cd build
-# TODO enable 'warning as error' asap
+
 cmake \
   -C $HOME/CMakeCache.cmake \
   -DCMAKE_INSTALL_PREFIX=$PWD/../install \
