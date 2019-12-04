@@ -1,6 +1,6 @@
 /** 
 
-\mainpage <a href="http://ilcsoft.desy.de/marlin">Marlin</a>
+\mainpage https://ilcsoft.github.io/MarlinMT
  
 <b>Marlin [Modular Analysis and Reconstruction for the LINear collider]</b>
 is a simple modular application framework for analysis and reconstruction code based
@@ -17,12 +17,12 @@ callbacks that the user can implement in their subclasses. A steering file mecha
 allows to activate the needed processors. These are then called for every event using 
 the LCEvent as container for input and output data in terms of LCCollections:
 
-<img src="../marlin_overview.gif" alt="marlin schema">
+<img src="marlin_overview.gif" alt="marlin schema">
 
 
 <h2>Installation</h2>
 
-The installation of Marlin is described in the <a href="../README.md">README.md</a>.
+The installation of Marlin is described in the <a href="https://ilcsoft.github.io/MarlinMT">documentation</a>.
 <b>Note that since v00-09-08 the default build process has been changed to use CMake and create
 shared libraries. This allows for a flexible plugin mechanism that does not involve recompiling and 
 relinking of Marlin and the needed packages if only one package is changed !</b>
@@ -36,7 +36,7 @@ projects.
 <p>
 Note: there is no need to write a main program as this is provided by Marlin. Existing 
 Processors are automatically registered with Marlin provided one instance exists in the
-library as described in the <a href="../README.md">README.md</a>.
+library.
 
 
 <h3>Steering files</h3>
@@ -122,14 +122,7 @@ Marlin is under development and there are frequent releases. Please check the
 <p>
 If you have any questions or proposals for new features please contact the author:
 
-<a href="mailto:Frank Gaede &lt;frank.gaede@desy.de&gt;">frank.gaede@desy.de</a>
+<a href="mailto:Frank Gaede &lt;frank.gaede@desy.de&gt;">frank.gaede@desy.de</a><br/>
+<a href="mailto:Remi Ete &lt;remi.ete@desy.de&gt;">remi.ete@desy.de</a>
 
 */
-
-
-/** The main namespace in Marlin. */
- namespace marlin{}
-
-/** A general logging library that is used in Marlin */
- namespace streamlog{}
-
