@@ -11,7 +11,7 @@ before_install:
   - sudo pip install --upgrade pip
 
 install:
-  - pip install mkdocs mkdocs-material pymdown-extensions pygments
+  - sudo pip install mkdocs mkdocs-material pymdown-extensions pygments
   - git clone https://github.com/pieterdavid/mkdocs-doxygen-plugin.git
   - cd mkdocs-doxygen-plugin
   - python setup.py install --user
