@@ -101,4 +101,5 @@ foreach( binary ${MarlinMT_BINARIES} )
 endforeach()
 
 install( FILES scripts/marlin-completion.bash TYPE BIN )
+install( FILES scripts/marlin-shell-functions.bash TYPE BIN )
 
