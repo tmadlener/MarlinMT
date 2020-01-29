@@ -11,16 +11,14 @@ export MARLIN_DIR=@CMAKE_INSTALL_PREFIX@
 export LD_LIBRARY_PATH=$MARLIN_DIR/lib:$LD_LIBRARY_PATH
 export PATH=$MARLIN_DIR/bin:$PATH
 
-if [ -f $MARLIN_DIR/bin/marlin-completion.bash ]
-then
-  source $MARLIN_DIR/bin/marlin-completion.bash
-fi
+source $MARLIN_DIR/bin/marlin-completion.bash
+source $MARLIN_DIR/bin/marlin-shell-functions.bash
 
 FRAMEWORK_MARLIN_DLL=@CMAKE_MARLIN_DLL@
 
 if [ "${FRAMEWORK_MARLIN_DLL}" != "" ]
 then
-  export MARLIN_DLL=${FRAMEWORK_MARLIN_DLL}
+  marlin-add-dll `echo $FRAMEWORK_MARLIN_DLL | tr ':' ' '`
 fi
 
 #
