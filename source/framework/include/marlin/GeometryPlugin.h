@@ -7,8 +7,7 @@
 
 // -- marlin headers
 #include "marlin/Exceptions.h"
-#include "marlin/Parameter.h"
-#include "marlin/Logging.h"
+#include "marlin/Component.h"
 
 namespace marlin {
 
@@ -20,11 +19,8 @@ namespace marlin {
    *  Responsible for loading geometry in Marlin and providing
    *  access to it through the GeometryManager
    */
-  class GeometryPlugin : public Parametrized {
+  class GeometryPlugin : public Component {
     friend class GeometryManager ;
-
-  public:
-    using Logger = Logging::Logger ;
 
   public:
     GeometryPlugin() = delete ;
@@ -80,38 +76,14 @@ namespace marlin {
 
     /**
      *  Print the complete geometry plugin description.
-     *  The geometry is dumped if the verbosity level is less than DEBUG5
      */
     void print() const ;
 
   protected:
-    /**
-     *  @brief  Get the application in which the plugin has been created
-     */
-    const Application &app() const ;
-
-  private:
-    /**
-     *  @brief  Initialize the geometry plugin.
-     *  Called by the geometry manager at startup
-     *
-     *  @param  app the application from which to get settings
-     */
-    void init( const Application *app ) ;
-
-  protected:
-    /// The geometry type
-    const std::string   _type ;
     /// The geometry plugin description
     std::string         _description {"No description"} ;
-    /// The application logger
-    Logger              _logger {nullptr} ;
     /// Whether to dump the geometry on creation
-    bool                _dumpGeometry {false} ;
-
-  private:
-    /// The Marlin application
-    const Application  *_application {nullptr} ;
+    BoolParameter       _dumpGeometry {*this, "DumpGeometry", "Whether to dump the geometry on creation", false} ;
   };
 
   //--------------------------------------------------------------------------
@@ -124,7 +96,7 @@ namespace marlin {
   //--------------------------------------------------------------------------
 
   inline const std::string &GeometryPlugin::type() const {
-    return _type ;
+    return componentName() ;
   }
 
 } // end namespace marlin

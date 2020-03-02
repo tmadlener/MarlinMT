@@ -1,57 +1,32 @@
 #include "marlin/GeometryPlugin.h"
 
 // -- marlin headers
-#include "marlin/Logging.h"
 #include "marlin/PluginManager.h"
 #include "marlin/Application.h"
 
 namespace marlin {
 
   GeometryPlugin::GeometryPlugin( const std::string &gtype ) :
-    _type(gtype) {
-    // create a standalone logger
-    _logger = Logging::createLogger( "Geometry" ) ;
-    // Whether to dump the geometry on creation
-    registerOptionalParameter( "DumpGeometry",
-      "Whether to dump the geometry on creation",
-      _dumpGeometry,
-      false) ;
+    Component(gtype) {
   }
 
   //--------------------------------------------------------------------------
 
   void GeometryPlugin::print() const {
     auto typeidx = typeIndex() ;
-    _logger->log<MESSAGE>() << "----------------------------------------------------------" << std::endl ;
-    _logger->log<MESSAGE>() << "-- Geometry plugin: " << type() << std::endl ;
-    _logger->log<MESSAGE>() << "-- Description: " << description() << std::endl ;
-    _logger->log<MESSAGE>() << "-- Handle at: " << handle() << std::endl ;
-    _logger->log<MESSAGE>()  << "-- Type index: " << std::endl ;
-    _logger->log<MESSAGE>()  << "---- name: " << typeidx.name() << std::endl ;
-    _logger->log<MESSAGE>()  << "---- hash: " << typeidx.hash_code() << std::endl ;
+    message() << "----------------------------------------------------------" << std::endl ;
+    message() << "-- Geometry plugin: " << type() << std::endl ;
+    message() << "-- Description: " << description() << std::endl ;
+    message() << "-- Handle at: " << handle() << std::endl ;
+    message()  << "-- Type index: " << std::endl ;
+    message()  << "---- name: " << typeidx.name() << std::endl ;
+    message()  << "---- hash: " << typeidx.hash_code() << std::endl ;
     if ( _dumpGeometry ) {
-      _logger->log<MESSAGE>() << "-- Geometry dump:" << std::endl ;
+      message() << "-- Geometry dump:" << std::endl ;
       dumpGeometry() ;
-      _logger->log<MESSAGE>() << "-- End of geometry dump" << std::endl ;
+      message() << "-- End of geometry dump" << std::endl ;
     }
-    _logger->log<MESSAGE>() << "----------------------------------------------------------" << std::endl ;
-  }
-
-  //--------------------------------------------------------------------------
-
-  void GeometryPlugin::init( const Application *application ) {
-    _application = application ;
-    _logger = app().createLogger( "Geometry " + _type ) ;
-    loadGeometry() ;
-  }
-
-  //--------------------------------------------------------------------------
-
-  const Application &GeometryPlugin::app() const {
-    if ( nullptr == _application ) {
-      throw Exception( "GeometryPlugin: application is null !" ) ;
-    }
-    return *_application ;
+    message() << "----------------------------------------------------------" << std::endl ;
   }
 
 } // namespace marlin
