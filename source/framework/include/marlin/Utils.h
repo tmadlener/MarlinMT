@@ -330,6 +330,127 @@ namespace marlin {
     }
     return ss.str() ;
   }
+  
+    namespace details {
+    
+    template <typename T>
+    struct type_info {
+      static constexpr const char* type = typeid(T).name() ;
+    };
+
+#define TYPE_INFO_IMPL( type_id, str ) \
+    template <> \
+    struct type_info<type_id> { \
+      static constexpr const char* type = str ; \
+    };
+
+    TYPE_INFO_IMPL( std::nullptr_t, "null" )
+    TYPE_INFO_IMPL( bool, "bool" )
+    TYPE_INFO_IMPL( short, "short" )
+    TYPE_INFO_IMPL( int, "int" )    
+    TYPE_INFO_IMPL( unsigned int, "unsigned int" )
+    TYPE_INFO_IMPL( float, "float" )    
+    TYPE_INFO_IMPL( double, "double" )
+    TYPE_INFO_IMPL( char, "char" )
+    TYPE_INFO_IMPL( std::string, "string" )
+    TYPE_INFO_IMPL( std::vector<short>, "vector<short>" )
+    TYPE_INFO_IMPL( std::vector<int>, "vector<int>" )
+    TYPE_INFO_IMPL( std::vector<unsigned int>, "vector<unsigned int>" )
+    TYPE_INFO_IMPL( std::vector<float>, "vector<float>" )
+    TYPE_INFO_IMPL( std::vector<double>, "vector<double>" )
+    TYPE_INFO_IMPL( std::vector<char>, "vector<char>" )
+    TYPE_INFO_IMPL( std::vector<std::string>, "vector<string>" )
+    
+#undef TYPE_INFO_IMPL
+
+    //--------------------------------------------------------------------------
+
+    template <typename T>
+    inline std::string to_string( const T &value ) {
+      std::ostringstream oss ;
+      if ((oss << value).fail()) {
+        MARLIN_THROW( "to_string failure: " + std::string(details::type_info<T>::type) ) ;
+      }
+      return oss.str() ;
+    }
+    
+    template <>
+    inline std::string to_string( const bool &value ) {
+      return value ? "true" : "false" ;
+    }
+    
+    template <>
+    inline std::string to_string( const std::string &value ) {
+      return value ;
+    }
+    
+    //--------------------------------------------------------------------------
+    
+    template <typename T>
+    inline std::string to_string( const std::vector<T> &input ) {
+      std::stringstream ss ;
+      for( auto iter = input.begin() ; iter != input.end() ; ++iter ) {
+        ss << typeToString( *iter ) ;
+        if( std::next(iter) != input.end() ) {
+          ss << " " ;
+        }
+      }
+      return ss.str() ;
+    }
+    
+    template <>
+    inline std::string to_string( const std::vector<std::string> &input ) {
+      std::stringstream ss ;
+      for( auto iter = input.begin() ; iter != input.end() ; ++iter ) {
+        ss << *iter ;
+        if( std::next(iter) != input.end() ) {
+          ss << " " ;
+        }
+      }
+      return ss.str() ;
+    }
+    
+    //--------------------------------------------------------------------------
+    
+    template <typename T>
+    inline T from_string( const std::string &str ) {
+      T t ;
+      std::istringstream iss(str) ;
+      if ((iss >> t).fail()) {
+        MARLIN_THROW( "from_string failure: " + std::string(details::type_info<T>::type) ) ;
+      }
+      return t ;
+    }
+    
+    template <>
+    inline std::string from_string( const std::string &str ) {
+      return str ;
+    }
+
+    template <>
+    inline bool from_string( const std::string &str ) {
+      static const auto true_list = { "true", "1", "on" } ;
+      static const auto false_list = { "false", "0", "off" } ;
+      auto strcp = str ;
+      std::transform(str.begin(), str.end(), strcp.begin(),
+        [](unsigned char c){ return std::tolower(c); } ) ;
+      if( std::find( std::begin(true_list), std::end(true_list), strcp ) != std::end(true_list) ) {
+        return true ;
+      }
+      if( std::find( std::begin(false_list), std::end(false_list), strcp ) != std::end(false_list) ) {
+        return false ;
+      }
+      MARLIN_THROW( "from_string failure: bool" ) ;
+    }
+
+    template <typename T>
+    inline std::vector<T> from_string( const std::vector<std::string> &strs ) {
+      std::vector<T> result( strs.size() ) ;
+      std::transform( strs.begin(), strs.end(), std::back_inserter( result ), from_string<T> ) ;
+      return result ;
+    }
+    
+  }
 
 } // end namespace marlin
 
