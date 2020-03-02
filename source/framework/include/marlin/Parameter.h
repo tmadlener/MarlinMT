@@ -8,774 +8,602 @@
 #include <typeinfo>
 #include <memory>
 #include <vector>
+#include <functional>
 
 // -- marlin headers
 #include <marlin/Utils.h>
-#include <marlin/StringParameters.h>
 
 namespace marlin {
-
+  
   /**
-   *  @brief  Parameter class.
-   *  Holds a steering variable.
-   *
-   *  @author F. Gaede, DESY
-   *  @author R. Ete, DESY
+   *  @brief  EParameterType enumerator
+   *  Enumerates parameter types supported by Marlin
    */
-  class Parameter {
-    friend std::ostream& operator<< (  std::ostream& , Parameter& ) ;
-
+  enum class EParameterType {
+    eSimple,              /// Simple (scalar) parameter
+    eVector               /// Vector parameter
+  };
+  
+  //--------------------------------------------------------------------------
+  //--------------------------------------------------------------------------
+  
+  /**
+   *  @brief  ParameterImpl class
+   *  Abstract internal implementation of a parameter
+   */
+  class ParameterImpl {
   public:
-    Parameter() = default ;
-    virtual ~Parameter() = default ;
-
+    ParameterImpl() = delete ;
+    ~ParameterImpl() = default ;
+    
+    /**
+     *  @brief  Constructor
+     *  
+     *  @param  paramType the parameter type
+     *  @param  na the parameter name
+     *  @param  desc the parameter description
+     *  @param  addr the address of the parameter variable
+     */
+    template <typename T>
+    inline ParameterImpl( EParameterType paramType, const std::string &na, const std::string & desc, std::shared_ptr<T> addr ) :
+      _type(paramType),
+      _name(na),
+      _description(desc),
+      _value(addr),
+      _typeIndex(typeid(T)) {
+      _typeFunction = [] { return details::type_info<T>::type ; };
+      _resetFunction = [this] { *std::static_pointer_cast<T>( _value ).get() = T() ; };
+      _strFunction = [this] { return details::to_string( get<T>() ) ; };
+    }
+    
     /**
      *  @brief  Get the parameter name
      */
-    const std::string& name() const ;
-
+    inline EParameterType type() const {
+      return _type ;
+    }    
+        
+    /**
+     *  @brief  Get the parameter name
+     */
+    inline const std::string& name() const {
+      return _name ;
+    }
+    
     /**
      *  @brief  Get the parameter description
      */
-    const std::string& description() const ;
-
+    inline const std::string& description() const {
+      return _description ;
+    }
+    
     /**
-     *  @brief  Get the set size (if the parameter is a vector)
+     *  @brief  Whether the parameter has been set
      */
-    int setSize() const ;
-
-    /**
-     *  @brief  Whether the parameter is optional
-     */
-    bool isOptional() const ;
-
-    /**
-     *  @brief  Whether the value has been set during steering file parsing
-     */
-    bool valueSet() const ;
-
-    /**
-     *  @brief  Get the parameter type as string
-     */
-    virtual const std::string type() const = 0 ;
-
+    inline bool isSet() const {
+      return _isSet ;
+    }
+    
     /**
      *  @brief  Get the parameter value as string
      */
-    virtual const std::string value() const = 0 ;
+    inline std::string str() const {
+      return _strFunction() ;
+    }
+    
+    /**
+     *  @brief  Get the parameter type as string
+     */
+    inline std::string typeStr() const {
+      return _typeFunction() ;
+    }
+    
+    /**
+     *  @brief  Get a type index object of the underlying type
+     */
+    inline const std::type_index &typeIndex() const {
+      return _typeIndex ;
+    }
+    
+    /**
+     *  @brief  Check whether the template parameter matches the internal implementation type
+     */
+    template <typename T>
+    inline bool isType() const {
+      return ( std::type_index(typeid(T)) == _typeIndex ) ;
+    }
+    
+    /**
+     *  @brief  Throw an exception if the internal type doesn't match the template parameter type 
+     */
+    template <typename T>
+    inline void checkType() const {
+      if( not isType<T>() ) {
+        MARLIN_THROW( "checkType failure. Given: " + std::string(details::type_info<T>::type) + ", stored: " + typeStr() ) ;
+      }
+    }
+    
+    /**
+     *  @brief  Set the parameter value.
+     *  Throw if the type is not matching the one on creation
+     *  
+     *  @param  val the parameter value to set 
+     */
+    template <typename T>
+    inline void set( const T &val ) {
+      checkType<T>() ;
+      *std::static_pointer_cast<T>( _value ).get() = val ;
+      _isSet = true ;
+    }
+    
+    /**
+     *  @brief  Get the parameter value. The type must match the one on creation.
+     *  Throw if the parameter is not set
+     */
+    template <typename T>
+    inline T get() const {
+      checkType<T>() ;
+      if( not isSet() ) {
+        MARLIN_THROW( "Parameter '" + name() +  "' not set" ) ;
+      }
+      return *std::static_pointer_cast<T>( _value ).get() ;
+    }
 
     /**
-     *  @brief  Get the parameter default value
+     *  @brief  Get the parameter value. The type must match the one on creation.
+     *  If the parameter is not set, return the fallback value.
+     *  
+     *  @param  fallback the fallback value if the parameter is not set
      */
-    virtual const std::string defaultValue() const = 0 ;
-
+    template <typename T>
+    inline T get( const T &fallback ) const {
+      checkType<T>() ;
+      if( not isSet() ) {
+        return fallback ;
+      }
+      return *std::static_pointer_cast<T>( _value ).get() ;
+    }
+    
     /**
-     *  @brief  Set the value using the string parameters
-     *
-     *  @param  params the string parameters to get the parameter value from
+     *  @brief  Reset the parameter value
      */
-    virtual void setValue( StringParameters* params ) = 0 ;
-
-  protected:
-    /// The parameter description
-    std::string       _description {""} ;
+    inline void reset() {
+      _resetFunction() ;
+      _isSet = false ;
+    }
+    
+  private:
+    /// The parameter type
+    EParameterType                   _type {} ;
     /// The parameter name
-    std::string       _name {""} ;
-    /// The set size, if the parameter type is vector
-    int               _setSize {0} ;
-    /// Whether the parameter is optional
-    bool              _optional {false} ;
-    /// Whether the value has been set after parsing
-    bool              _valueSet {false} ;
+    std::string                      _name {} ;
+    /// The parameter description
+    std::string                      _description {} ;
+    /// The function converting the parameter type to string
+    std::function<std::string()>     _typeFunction {} ;
+    /// The function converting the parameter value to string
+    std::function<std::string()>     _strFunction {} ;
+    /// The function resetting the parameter value
+    std::function<void()>            _resetFunction {} ;
+    /// Whether the parameter is set
+    bool                             _isSet {false} ;
+    /// The address to the parameter value
+    std::shared_ptr<void>            _value {nullptr} ;
+    /// The type index object of the underlying parameter type
+    std::type_index                  _typeIndex ;
   };
-
+  
   //--------------------------------------------------------------------------
   //--------------------------------------------------------------------------
-
+  
   /**
-   *  @brief  ParameterT template class.
-   *  Templated implementation of Parameter class.
+   *  @brief  Configurable class
+   *  Interface for configuring components in the framework
+   */
+  class Configurable {
+  public:
+    Configurable() = default ;
+    virtual ~Configurable() = default ;
+    
+    using ParameterMap = std::map<std::string, std::shared_ptr<ParameterImpl>> ;
+    using iterator = ParameterMap::iterator ;
+    using const_iterator = ParameterMap::const_iterator ;
+    
+    /**
+     *  @brief  Add a parameter. Throw if already exists.
+     *  
+     *  @param  paramType the parameter type
+     *  @param  name the parameter name
+     *  @param  desc the parameter description
+     *  @param  value the address to the parameter value
+     */
+    template <typename T>
+    inline std::weak_ptr<ParameterImpl> addParameter( EParameterType paramType, const std::string &name, const std::string &desc, std::shared_ptr<T> value ) {
+      checkParameter( name ) ;
+      auto param = std::make_shared<ParameterImpl>( paramType, name, desc, value ) ;
+      _parameters[ name ] = param ;
+      return param ;
+    }
+    
+    /**
+     *  @brief  Get a parameter value
+     * 
+     *  @param  name the parameter name to get
+     */
+    template <typename T>
+    inline T parameter( const std::string &name ) const {
+      checkParameter( name ) ;
+      return _parameters.find( name )->second->get<T>()  ;
+    }
+    
+    /**
+     *  @brief  Get a parameter value. Returns the fallback value if the parameter is not set.
+     *  Throw an exception if the parameter is not registered
+     * 
+     *  @param  name the parameter name
+     *  @param  fallback the fallback value if the parameter is not set
+     */
+    template <typename T>
+    inline T parameter( const std::string &name, const T &fallback ) const {
+      checkParameter( name ) ;
+      return _parameters.find( name )->second->get<T>( fallback )  ;
+    }
+    
+    /**
+     *  @brief  Check if the parameter has been registered
+     *  
+     *  @param  name the parameter name to check
+     */
+    inline void checkParameter( const std::string &name ) const {
+      if( exists( name ) ) {
+        MARLIN_THROW( "Parameter '" + name +  "' already present" ) ;
+      }
+    }
+
+    /**
+     *  @brief  Return true if the parameter has been registered
+     * 
+     *  @param  name the parameter name to check
+     */
+    inline bool exists( const std::string &name ) const {
+      return _parameters.find( name ) != _parameters.end() ;
+    }
+
+    /**
+     *  @brief  Returns true if the parameter exists and is set, false otherwise
+     * 
+     *  @param  name the parameter name to check
+     */
+    inline bool isSet( const std::string &name ) const {
+      auto iter = _parameters.find( name ) ;
+      if( iter == _parameters.end() ) {
+        return false ;
+      }
+      iter->second->isSet() ;
+    }
+
+    /**
+     *  @brief  Remove all parameters
+     */
+    void clear() {
+      _parameters.clear() ;
+    }
+    
+    /**
+     *  @brief  Unset all registered parameters
+     */
+    void unset() {
+      std::for_each( begin(), end(), []( auto &p ){ p->reset(); } ) ;
+    }
+    
+    iterator begin() { return _parameters.begin() ; }
+    const_iterator begin() const { return _parameters.begin() ; }    
+    iterator end() { return _parameters.end() ; }
+    const_iterator end() const { return _parameters.end() ; }
+    
+  private:
+    /// The parameter map
+    ParameterMap               _parameters {} ;
+  };
+  
+  //--------------------------------------------------------------------------
+  //--------------------------------------------------------------------------
+  
+  /**
+   *  @brief  ParameterBase<T> class
+   *  Base interface for user parameters. See daughter classes for usage
    */
   template <typename T>
-  class ParameterT : public Parameter {
+  class ParameterBase {
   public:
-    ~ParameterT() = default ;
-
-  public:
+    /// Default destructor
+    virtual ~ParameterBase() = default ;
+    
     /**
      *  @brief  Constructor
-     *
-     *  @param  parameterName the parameter name
-     *  @param  parameterDescription the parameter description
-     *  @param  parameter the parameter value reference
-     *  @param  parameterDefaultValue the parameter default value
-     *  @param  optional whether the parameter is optional while parsing the steering file
-     *  @param  parameterSetSize the set size of the parameter, if of type vector
+     * 
+     *  @param  conf a configurable object to which the parameter is added
+     *  @param  paramType the parameter type
+     *  @param  na the parameter name
+     *  @param  desc the parameter description
      */
-    ParameterT( const std::string& parameterName, const std::string& parameterDescription,
-        T& parameter, const T& parameterDefaultValue,
-        bool optional, int parameterSetSize = 0) ;
+    inline ParameterBase( Configurable &conf, EParameterType paramType, const std::string &na, const std::string &desc ) {
+      _impl = conf.addParameter( paramType, na, desc, _value ) ;
+    }
+    
+    /**
+     *  @brief  Constructor
+     * 
+     *  @param  conf a configurable object to which the parameter is added
+     *  @param  paramType the parameter type
+     *  @param  na the parameter name
+     *  @param  desc the parameter description
+     *  @param  defVal the default parameter value
+     */
+    inline ParameterBase( Configurable &conf, EParameterType paramType, const std::string &na, const std::string &desc, const T &defVal ) :
+      _defaultValue( defVal ) {
+      _impl = conf.addParameter( paramType, na, desc, _value ) ;
+    }
 
     /**
-     *  @brief  Get the parameter value
+     *  @brief  Get the parameter type
      */
-    const T &valueT() const ;
+    inline EParameterType type() const {
+      return _impl.lock()->type() ;
+    }
+    
+    /**
+     *  @brief  Get the property name
+     */
+    inline const std::string& name() const {
+      return _impl.lock()->name() ;
+    }
+    
+    /**
+     *  @brief  Get the parameter description
+     */
+    inline const std::string& description() const {
+      return _impl.lock()->description() ;
+    }
+    
+    /**
+     *  @brief  Whether the parameter has been set
+     */
+    inline bool isSet() const {
+      return _impl.lock()->isSet() ;
+    }
+    
+    /**
+     *  @brief  Get the parameter value as string
+     */
+    inline std::string str() const {
+      return _impl.lock()->str() ;
+    }
+    
+    /**
+     *  @brief  Get the parameter type as string
+     */
+    inline std::string typeStr() const {
+      return _impl.lock()->typeStr() ;
+    }
+    
+    /**
+     *  @brief  Get a type index object of the underlying type
+     */
+    inline const std::type_index &typeIndex() const {
+      return _impl.lock()->typeIndex() ;
+    }
+    
+    /**
+     *  @brief  Implicit conversion operator to get the parameter value
+     */
+    inline operator T() const {
+      return *_value.get() ;
+    }
+    
+    /**
+     *  @brief  Get the parameter value. Throws if the parameter is 
+     *  not set and has no default value
+     */
+    inline T get() const {
+      if( isSet() ) {
+        return *_value.get() ;
+      }
+      return _defaultValue.value() ;
+    }
 
     /**
-     *  @brief  Get the parameter default value
+     *  @brief  Reset the parameter value (only)
      */
-    const T &defaultValueT() const ;
-
-  public:
-    // interface implementation
-    const std::string type() const override ;
-    const std::string defaultValue() const override ;
-    const std::string value() const override ;
-    void setValue( StringParameters* params ) override ;
-
+    inline void reset() {
+      _impl.lock()->reset() ;
+    }
+    
   protected:
-    /// The parameter value reference
-    T  &_value ;
-    /// The default parameter value reference
-    T   _defaultValue ;
+    /// The parameter value address
+    std::shared_ptr<T>             _value { std::make_shared<T>() } ;
+    /// The optional default value
+    std::optional<T>               _defaultValue {} ;
+    /// A weak pointer on the parameter implementation
+    std::weak_ptr<ParameterImpl>   _impl {} ;
   };
-
+  
   //--------------------------------------------------------------------------
   //--------------------------------------------------------------------------
-
-  template <typename T>
-  class PropertyBase ;
-
-  class Parametrized {
-  public:
-    template <typename T>
-    friend class PropertyBase ;
-    typedef std::shared_ptr<Parameter>            ParameterPtr ;
-    typedef std::map<std::string, ParameterPtr>   ParameterMap ;
-    typedef std::map<std::string, std::string>    LCIOTypeMap ;
-    typedef ParameterMap::iterator                iterator ;
-    typedef ParameterMap::const_iterator          const_iterator ;
-
-  public:
-    Parametrized() = default ;
-    virtual ~Parametrized() = default ;
-    Parametrized(const Parametrized &) = delete ;
-    Parametrized &operator=(const Parametrized &) = delete ;
-
-   /**
-    *  @brief  Register a steering variable.
-    *  The default value has to be of the _same_ type as the parameter, e.g.
-    *  @code{cpp}
-    *  float _cut ;
-    *  // ...
-    *  registerParameter( "Cut", "cut...", _cut , float( 3.141592 ) ) ;
-    *  @endcode
-    *  as implicit conversions don't work for templates.<br>
-    *  The optional parameter setSize is used for formating the printout of parameters.
-    *  This can be used if the parameter values are expected to come in sets of fixed size.
-    */
-    template<class T>
-    void registerParameter(const std::string& parameterName,
-          const std::string& parameterDescription,
-		      T& parameter,
-          const T& defaultVal,
-          int setSize = 0 ) ;
-
-   /**
-    *  @brief  Same as registerParameter except that the parameter is optional.
-    *  The value of the parameter will still be set to the default value, which
-    *  is used to print an example steering line.
-    *  Use parameterSet() to check whether it actually has been set in the steering
-    *  file.
-    */
-    template<class T>
-    void registerOptionalParameter(const std::string& parameterName,
-				   const std::string& parameterDescription,
-				   T& parameter,
-				   const T& defaultVal,
-				   int setSize = 0 ) ;
-    
-   /**
-    *  @brief  Specialization of registerParameter() for a parameter that defines an
-    *  input collection - can be used fo checking the consistency of the steering file.
-    */
-    void registerInputCollection(const std::string& collectionType,
-          const std::string& parameterName,
-          const std::string& parameterDescription,
-          std::string& parameter,
-          const std::string& defaultVal,
-          int setSize = 0 ) ;
-    
-    /**
-     *  @brief  Specialization of registerParameter() for a parameter that defines one or several
-     *  input collections - can be used fo checking the consistency of the steering file.
-     */
-    void registerInputCollections(const std::string& collectionType,
-          const std::string& parameterName,
-          const std::string& parameterDescription,
-          std::vector<std::string>& parameter,
-          const std::vector<std::string>& defaultVal,
-          int setSize = 0 ) ;
-    
-    /**
-     *  @brief  Specialization of registerParameter() for a parameter that defines an
-     *  output collection - can be used fo checking the consistency of the steering file.
-     */
-    void registerOutputCollection(const std::string& collectionType,
-				  const std::string& parameterName,
-				  const std::string& parameterDescription,
-				  std::string& parameter,
-				  const std::string& defaultVal,
-				  int setSize = 0 ) ;
-
-    /**
-     *  @brief  Tests whether the parameter has been set in the steering file
-     */
-    bool parameterSet( const std::string& name ) ;
-
-    /**
-     *  @brief  Clear the parameter map
-     */
-    void clearParameters() ;
-
-    /**
-     *  @brief  Update the parameter map with the input parameters
-     *
-     *  @param  parameters the input parameter list
-     */
-    void setParameters( std::shared_ptr<StringParameters> parameters ) ;
-
-    /**
-     *  @brief  Get the list of parameter names
-     */
-    std::vector<std::string> parameterNames() const ;
-
-    /**
-     *  @brief  Get a parameter value.
-     *  If the parameter exists, an attempt to cast the parameter type
-     *  to the same type as it was registered is done.
-     *  It it fails, an exception is thrown.
-     *  If the parameter doesn't exists, an exception is thrown.
-     *  If the parameter exists but is not set, the default value is returned.
-     *
-     *  @param  name the parameter name
-     */
-    template <typename T>
-    T getParameter( const std::string& name ) const ;
-    
-    /**
-     *  @brief  Return the LCIO input type for the collection colName - empty string if colName is
-     *  not a registered collection name
-     */
-    std::string getLCIOInType( const std::string& colName ) const ;
-
-    /**
-     *  @brief  Return the LCIO output type for the collection colName - empty string if colName is
-     *  not a registered collection name
-     */
-    std::string getLCIOOutType( const std::string& colName ) const ;
-    
-    /**
-     *  @brief  True if the given parameter defines an LCIO input collection, i.e. the type has
-     *  been defined with setLCIOInType().
-     */
-    bool isInputCollectionName( const std::string& parameterName ) const ;
-
-    /**
-     *  @brief   True if the given parameter defines an LCIO output collection
-     */
-    bool isOutputCollectionName( const std::string& parameterName ) const ;
-    
-    /**
-     *  @brief  Begin iterator to parameter map
-     */
-    iterator pbegin() ;
-    
-    /**
-     *  @brief  End iterator of parameter map
-     */
-    iterator pend() ;
-    
-    /**
-     *  @brief  Begin iterator to parameter map
-     */
-    const_iterator pbegin() const ;
-    
-    /**
-     *  @brief  End iterator of parameter map
-     */
-    const_iterator pend() const ;
-
-  private:
-    /**
-     *  @brief  Tests whether the parameter has been registered before
-     *
-     *  @param name name of the parameter to check
-     *  @throw logic_error if parameter has been registered before
-     */
-    void checkForExistingParameter( const std::string& parameterName ) const ;
-    
-    /** 
-     *  @brief  Set the expected LCIO type for a parameter that refers to 
-     *  one or more input collections.
-     */
-    void setLCIOInType(const std::string& colName,  const std::string& lcioInType) ;
-
-    /**  
-     *  @brief  Set the LCIO type for a parameter that refers to an output collections,
-     *  i.e. the type has been defined with setLCIOOutType().
-     */
-    void setLCIOOutType(const std::string& collectionName,  const std::string& lcioOutType) ;
-    
-    /**
-     *  @brief  Retrieve a parameter pointer in the internal map
-     */
-    ParameterPtr findParameter( const std::string& parameterName ) const ;
-
-  private:
-    ///< The parameter map
-    ParameterMap                       _parameters {} ;
-    ///< The input collection information
-    LCIOTypeMap                        _inTypeMap {} ;
-    ///< The output collection information
-    LCIOTypeMap                        _outTypeMap {} ;
-  };
-
-  //--------------------------------------------------------------------------
-  //--------------------------------------------------------------------------
-
+  
   /**
-   *  @brief  PropertyBase template class.
-   *          Base class for property registration, e.g , for processors
+   *  @brief  Parameter<T> class
+   *  High level interface to register simple parameter values (int, float, ...).
    */
   template <typename T>
-  class PropertyBase {
+  class Parameter : public ParameterBase<T> {
   public:
-    typedef std::shared_ptr<Parameter> ParameterPtr ;
-    
-  protected:
-    /// Default constructor
-    PropertyBase() = default ;
+    /// Deleted constructor
+    Parameter() = delete ;
     /// Default copy constructor
-    PropertyBase( const PropertyBase & ) = default ;
+    Parameter( const Parameter<T> & ) = default ;
     /// Default assignement operator
-    PropertyBase &operator=( const PropertyBase & ) = default ;
+    Parameter<T> &operator=( const Parameter<T> & ) = default ;
     /// Default destructor
-    ~PropertyBase() = default ;
-
-  public:    
-    /// Type conversion function
-    inline operator T() const {
-      return _valueT ;
-    }
-    /// Value getter
-    inline const T &get() const {
-      return _valueT ;
-    }
-    /// Whether a value was parsed and set
-    inline bool isSet() const {
-      return _parameter->valueSet() ;
-    }
-    /// Get the property name
-    inline const std::string &name() const {
-      return _parameter->name() ;
-    }
-    /// Get the property name
-    inline const std::string &description() const {
-      return _parameter->description() ;
+    ~Parameter() = default ;
+    
+    /**
+     *  @brief  Constructor
+     *  
+     *  @param  conf the configurable object owning the parameter
+     *  @param  na the parameter name
+     *  @param  desc the parameter description
+     */
+    inline Parameter( Configurable &conf, const std::string &na, const std::string &desc ) :
+      ParameterBase<T>( EParameterType::eSimple, na, desc ) {
+      /* nop */
     }
     
-  protected:
-    template <typename S>
-    inline void retrieveParameter( S *owner, const std::string &parameterName ) {
-      _parameter = owner->findParameter( parameterName ) ;
+    /**
+     *  @brief  Constructor
+     *  
+     *  @param  conf the configurable object owning the parameter
+     *  @param  na the parameter name
+     *  @param  desc the parameter description
+     *  @param  defVal the parameter default value
+     */
+    inline Parameter( Configurable &conf, const std::string &na, const std::string &desc, const T &defVal ) :
+      ParameterBase<T>( EParameterType::eSimple, na, desc, defVal ) {
+      /* nop */
     }
-    
-  protected:
-    /// The property variable
-    T                    _valueT {} ;
-    /// The internal parameter
-    ParameterPtr         _parameter {nullptr} ;
   };
   
   //--------------------------------------------------------------------------
+  //--------------------------------------------------------------------------
   
+  /**
+   *  @brief  VectorParameter<T> class.
+   *  High level interface to register vector parameters (std::vector<int>, std::vector<float>, ...).
+   *  Defines also alias methods to std::vector<T> for easy use
+   */
   template <typename T>
-  inline std::ostream &operator <<( std::ostream &stream, const PropertyBase<T> &rhs ) {
+  class VectorParameter : public ParameterBase<std::vector<T>> {
+  public:
+    using Base = ParameterBase<std::vector<T>> ;
+    
+    /// Deleted constructor
+    VectorParameter() = delete ;
+    /// Default copy constructor
+    VectorParameter( const VectorParameter<T> & ) = default ;
+    /// Default assignement operator
+    VectorParameter<T> &operator=( const VectorParameter<T> & ) = default ;
+    /// Default destructor
+    ~VectorParameter() = default ;
+    
+    /**
+     *  @brief  Constructor
+     *  
+     *  @param  conf the configurable object owning the parameter
+     *  @param  na the parameter name
+     *  @param  desc the parameter description
+     */
+    inline VectorParameter( Configurable &conf, const std::string &na, const std::string &desc ) :
+      Base( EParameterType::eVector, na, desc ) {
+      /* nop */
+    }
+    
+    /**
+     *  @brief  Constructor
+     *  
+     *  @param  conf the configurable object owning the parameter
+     *  @param  na the parameter name
+     *  @param  desc the parameter description
+     *  @param  defVal the parameter default value
+     */
+    inline VectorParameter( Configurable &conf, const std::string &na, const std::string &desc, const T &defVal ) :
+      Base( EParameterType::eVector, na, desc, defVal ) {
+      /* nop */
+    }
+    
+    // vector const (only) interface aliases
+    auto at( typename std::vector<T>::size_type idx ) const { return Base::_value->at(idx) ; }
+    auto operator[]( typename std::vector<T>::size_type idx ) const { return *(Base::_value)[idx] ; }
+    auto front() const { return Base::_value->front() ; }
+    auto back() const { return Base::_value->back() ; }
+    auto data() const { return Base::_value->data() ; }
+    auto begin() const { return Base::_value->begin() ; }
+    auto end() const { return Base::_value->end() ; }
+    auto cbegin() const { return Base::_value->cbegin() ; }
+    auto cend() const { return Base::_value->cend() ; }
+    auto rbegin() const { return Base::_value->rbegin() ; }
+    auto rend() const { return Base::_value->rend() ; }
+    auto crbegin() const { return Base::_value->crbegin() ; }
+    auto crend() const { return Base::_value->crend() ; }
+    auto empty() const { return Base::_value->empty() ; }
+    auto size() const { return Base::_value->size() ; }
+    auto max_size() const { return Base::_value->max_size() ; }
+  };
+  
+  //--------------------------------------------------------------------------
+
+  template <typename T>
+  inline std::ostream &operator <<( std::ostream &stream, const Parameter<T> &rhs ) {
     stream << rhs.get() ;
     return stream ;
   }
-  
+
   //--------------------------------------------------------------------------
-  
+
   template <typename T, typename S>
-  inline bool operator ==( const PropertyBase<T> &lhs, const S &rhs ) {
+  inline bool operator ==( const Parameter<T> &lhs, const S &rhs ) {
     return ( lhs.get() == rhs ) ;
   }
-  
+
   //--------------------------------------------------------------------------
-  
+
   template <typename T, typename S>
-  inline bool operator !=( const PropertyBase<T> &lhs, const S &rhs ) {
+  inline bool operator !=( const Parameter<T> &lhs, const S &rhs ) {
     return ( lhs.get() != rhs ) ;
   }
-  
+
   //--------------------------------------------------------------------------
-  
+
   template <typename T, typename S>
-  inline bool operator <( const PropertyBase<T> &lhs, const S &rhs ) {
+  inline bool operator <( const Parameter<T> &lhs, const S &rhs ) {
     return ( lhs.get() < rhs ) ;
   }
-  
+
   //--------------------------------------------------------------------------
-  
+
   template <typename T, typename S>
-  inline bool operator <=( const PropertyBase<T> &lhs, const S &rhs ) {
+  inline bool operator <=( const Parameter<T> &lhs, const S &rhs ) {
     return ( lhs.get() <= rhs ) ;
   }
-  
+
   //--------------------------------------------------------------------------
-  
+
   template <typename T, typename S>
-  inline bool operator >( const PropertyBase<T> &lhs, const S &rhs ) {
+  inline bool operator >( const Parameter<T> &lhs, const S &rhs ) {
     return ( lhs.get() > rhs ) ;
   }
-  
+
   //--------------------------------------------------------------------------
-  
+
   template <typename T, typename S>
-  inline bool operator >=( const PropertyBase<T> &lhs, const S &rhs ) {
+  inline bool operator >=( const Parameter<T> &lhs, const S &rhs ) {
     return ( lhs.get() >= rhs ) ;
   }
   
   //--------------------------------------------------------------------------
-  //--------------------------------------------------------------------------
   
-  /**
-   *  @brief  Property template class.
-   *          Declare a simple (scalar, vector, etc ...) property
-   */
-  template <typename T>
-  class Property : public PropertyBase<T> {
-  public:
-    /// Deleted constructor
-    Property() = delete ;
-    /// Default copy constructor
-    Property( const Property<T> & ) = default ;
-    /// Default assignement operator
-    Property<T> &operator=( const Property<T> & ) = default ;
-    /// Default destructor
-    ~Property() = default ;
-    
-    /// Assignement operator
-    inline Property<T> &operator= ( const T &rhs ) {
-      PropertyBase<T>::_valueT = rhs ;
-      return *this ;
-    }
-    
-  public:
-    /// Simple parameter property constructor with default value
-    template <class S>
-    inline Property( S *owner, const std::string &nam, const std::string &desc, const T &def ) {
-      owner->registerParameter( nam, desc, PropertyBase<T>::_valueT, def, false ) ;
-      PropertyBase<T>::retrieveParameter( owner, nam ) ;
-    }
-    
-    /// Simple parameter property constructor without default value
-    template <class S>
-    inline Property( S *owner, const std::string &nam, const std::string &desc ) {
-      owner->registerParameter( nam, desc, PropertyBase<T>::_valueT, T(), false ) ;
-      PropertyBase<T>::retrieveParameter( owner, nam ) ;
-    }
-  };
-  
-  //--------------------------------------------------------------------------
-  //--------------------------------------------------------------------------
-  
-  /**
-   *  @brief  Property template class.
-   *          Declare a simple (scalar, vector, etc ...) property
-   */
-  template <typename T>
-  class Property<std::vector<T>> : public PropertyBase<std::vector<T>> {
-  public:
-    typedef typename std::vector<T>::iterator iterator ;
-    typedef typename std::vector<T>::const_iterator const_iterator ;
-    typedef typename std::vector<T>::reverse_iterator reverse_iterator ;
-    typedef typename std::vector<T>::const_reverse_iterator const_reverse_iterator ;
-    
-  public:
-    /// Deleted constructor
-    Property() = delete ;
-    /// Default copy constructor
-    Property( const Property<std::vector<T>> & ) = default ;
-    /// Default assignement operator
-    Property<std::vector<T>> &operator=( const Property<std::vector<T>> & ) = default ;
-    /// Default destructor
-    ~Property() = default ;
-    
-    /// Assignement operator
-    inline Property<std::vector<T>> &operator= ( const std::vector<T> &rhs ) {
-      PropertyBase<std::vector<T>>::_valueT = rhs ;
-      return *this ;
-    }
-    
-    // vector const interface (only) aliases
-    auto at( typename std::vector<T>::size_type idx ) const { return PropertyBase<std::vector<T>>::_valueT.at(idx) ; }
-    auto operator[]( typename std::vector<T>::size_type idx ) const { return PropertyBase<std::vector<T>>::_valueT[idx] ; }
-    auto front() const { return PropertyBase<std::vector<T>>::_valueT.front() ; }
-    auto back() const { return PropertyBase<std::vector<T>>::_valueT.back() ; }
-    auto data() const { return PropertyBase<std::vector<T>>::_valueT.data() ; }
-    auto begin() const { return PropertyBase<std::vector<T>>::_valueT.begin() ; }
-    auto end() const { return PropertyBase<std::vector<T>>::_valueT.end() ; }
-    auto cbegin() const { return PropertyBase<std::vector<T>>::_valueT.cbegin() ; }
-    auto cend() const { return PropertyBase<std::vector<T>>::_valueT.cend() ; }
-    auto rbegin() const { return PropertyBase<std::vector<T>>::_valueT.rbegin() ; }
-    auto rend() const { return PropertyBase<std::vector<T>>::_valueT.rend() ; }
-    auto crbegin() const { return PropertyBase<std::vector<T>>::_valueT.crbegin() ; }
-    auto crend() const { return PropertyBase<std::vector<T>>::_valueT.crend() ; }
-    auto empty() const { return PropertyBase<std::vector<T>>::_valueT.empty() ; }
-    auto size() const { return PropertyBase<std::vector<T>>::_valueT.size() ; }
-    auto max_size() const { return PropertyBase<std::vector<T>>::_valueT.max_size() ; }
-
-  public:
-    /// Simple parameter property constructor with default value
-    template <class S>
-    inline Property( S *owner, const std::string &nam, const std::string &desc, const std::vector<T> &def ) {
-      owner->registerParameter( nam, desc, PropertyBase<std::vector<T>>::_valueT, def, false ) ;
-      PropertyBase<std::vector<T>>::retrieveParameter( owner, nam ) ;
-    }
-    
-    /// Simple parameter property constructor without default value
-    template <class S>
-    inline Property( S *owner, const std::string &nam, const std::string &desc ) {
-      owner->registerParameter( nam, desc, PropertyBase<std::vector<T>>::_valueT, std::vector<T>(), false ) ;
-      PropertyBase<std::vector<T>>::retrieveParameter( owner, nam ) ;
-    }
-  };
-  
-  //--------------------------------------------------------------------------
-  
-  /**
-   *  @brief  OptionalProperty template class.
-   *          Declare a simple (scalar, vector, etc ...) property with the flag 'optional'
-   */
-  template <typename T>
-  class OptionalProperty : public PropertyBase<T> {
-  public:
-    /// Deleted constructor
-    OptionalProperty() = delete ;
-    /// Default copy constructor
-    OptionalProperty( const OptionalProperty<T> & ) = default ;
-    /// Default assignement operator
-    OptionalProperty<T> &operator=( const OptionalProperty<T> & ) = default ;
-    /// Default destructor
-    ~OptionalProperty() = default ;
-    
-    /// Assignement operator
-    inline OptionalProperty<T> &operator= ( const T &rhs ) {
-      PropertyBase<T>::_valueT = rhs ;
-      return *this ;
-    }
-  public:
-    /// Simple parameter property constructor with default value
-    template <class S>
-    inline OptionalProperty( S *owner, const std::string &nam, const std::string &desc, const T &def ) {
-      owner->registerParameter( nam, desc, PropertyBase<T>::_valueT, def, true ) ;
-      PropertyBase<T>::retrieveParameter( owner, nam ) ;
-    }
-    
-    /// Simple parameter property constructor without default value
-    template <class S>
-    inline OptionalProperty( S *owner, const std::string &nam, const std::string &desc ) {
-      owner->registerParameter( nam, desc, PropertyBase<T>::_valueT, T(), true ) ;
-      PropertyBase<T>::retrieveParameter( owner, nam ) ;
-    }
-  };
-
-  //--------------------------------------------------------------------------
-  
-  /**
-   *  @brief  InputCollectionProperty class.
-   *          Declare a LCIO input collection property
-   */
-  class InputCollectionProperty : public PropertyBase<std::string> {
-  public:
-    /// Constructor with default value
-    template <class S>
-    inline InputCollectionProperty( S *owner, const std::string &typ, const std::string &nam, const std::string &desc, const std::string &def ) {
-      owner->registerInputCollection( typ, nam, desc, PropertyBase<std::string>::_valueT, def ) ;
-      PropertyBase<std::string>::retrieveParameter( owner, nam ) ;
-    }
-    
-    /// Constructor without default value
-    template <class S>
-    inline InputCollectionProperty( S *owner, const std::string &typ, const std::string &nam, const std::string &desc ) {
-      owner->registerInputCollection( typ, nam, desc, PropertyBase<std::string>::_valueT, {} ) ;
-      PropertyBase<std::string>::retrieveParameter( owner, nam ) ;
-    }
-  };
-  
-  //--------------------------------------------------------------------------
-  
-  /**
-   *  @brief  InputCollectionsProperty class.
-   *          Declare a LCIO input collections property
-   */
-  class InputCollectionsProperty : public PropertyBase<std::vector<std::string>> {
-  public:
-    /// Constructor with default value
-    template <class S>
-    inline InputCollectionsProperty( S *owner, const std::string &typ, const std::string &nam, const std::string &desc, const std::vector<std::string> &def ) {
-      owner->registerInputCollections( typ, nam, desc, PropertyBase<std::vector<std::string>>::_valueT, def ) ;
-      PropertyBase<std::vector<std::string>>::retrieveParameter( owner, nam ) ;
-    }
-    
-    /// Constructor without default value
-    template <class S>
-    inline InputCollectionsProperty( S *owner, const std::string &typ, const std::string &nam, const std::string &desc ) {
-      owner->registerInputCollections( typ, nam, desc, PropertyBase<std::vector<std::string>>::_valueT, {} ) ;
-      PropertyBase<std::vector<std::string>>::retrieveParameter( owner, nam ) ;
-    }
-  };
-  
-  //--------------------------------------------------------------------------
-
-  /**
-   *  @brief  OutputCollectionProperty class.
-   *          Declare a LCIO output collection property
-   */
-  class OutputCollectionProperty : public PropertyBase<std::string> {
-  public:
-    /// Constructor with default value
-    template <class S>
-    inline OutputCollectionProperty( S *owner, const std::string &typ, const std::string &nam, const std::string &desc, const std::string &def ) {
-      owner->registerOutputCollection( typ, nam, desc, PropertyBase<std::string>::_valueT, def ) ;
-      PropertyBase<std::string>::retrieveParameter( owner, nam ) ;
-    }
-    
-    /// Constructor without default value
-    template <class S>
-    inline OutputCollectionProperty( S *owner, const std::string &typ, const std::string &nam, const std::string &desc ) {
-      owner->registerOutputCollection( typ, nam, desc, PropertyBase<std::string>::_valueT, {} ) ;
-      PropertyBase<std::string>::retrieveParameter( owner, nam ) ;
-    }
-  };
-
-  //--------------------------------------------------------------------------
-  //--------------------------------------------------------------------------
-
-  template <typename T>
-  inline ParameterT<T>::ParameterT( const std::string& parameterName, const std::string& parameterDescription,
-      T& parameter, const T& parameterDefaultValue,
-      bool optional, int parameterSetSize ) :
-    _value( parameter ),
-    _defaultValue( parameterDefaultValue ) {
-    _name = parameterName ;
-    _value = parameterDefaultValue ;
-    _description = parameterDescription ;
-    _optional = optional ;
-    _valueSet = false ;
-    _setSize = parameterSetSize ;
-  }
-
-  //--------------------------------------------------------------------------
-
-  template <typename T>
-  inline const T &ParameterT<T>::valueT() const {
-    return _value ;
-  }
-
-  //--------------------------------------------------------------------------
-
-  template <typename T>
-  inline const T &ParameterT<T>::defaultValueT() const {
-    return _defaultValue ;
-  }
-
-  //--------------------------------------------------------------------------
-
-  template <typename T>
-  inline const std::string ParameterT<T>::type() const {
-    // make this human readable
-    if     ( typeid( _value ) == typeid( std::vector<int> )) return "IntVec" ;
-    else if( typeid( _value ) == typeid( std::vector<float>  )) return "FloatVec" ;
-    else if( typeid( _value ) == typeid( std::vector<std::string> )) return "StringVec" ;
-    else if( typeid( _value ) == typeid( int   )) return "int" ;
-    else if( typeid( _value ) == typeid( float )) return "float" ;
-    else if( typeid( _value ) == typeid( double )) return "double" ;
-    else if( typeid( _value ) == typeid( std::string ) ) return "string" ;
-    else if( typeid( _value ) == typeid( bool ) ) return "bool";
-    else return typeid( _value ).name() ;
-  }
-
-  //--------------------------------------------------------------------------
-
-  template <typename T>
-  inline const std::string ParameterT<T>::defaultValue() const {
-    return StringUtil::join( _defaultValue, " " ) ;
-  }
-
-  //--------------------------------------------------------------------------
-
-  template <typename T>
-  inline const std::string ParameterT<T>::value() const {
-    return StringUtil::join( _value, " " ) ;
-  }
-
-  //--------------------------------------------------------------------------
-
-  template <typename T>
-  void ParameterT<T>::setValue( StringParameters* params ) {
-    if( params->isParameterSet( name() ) ) {
-      _valueSet = true ;
-    }
-    params->get( name(), _value ) ;
-  }
-
-  //--------------------------------------------------------------------------
-  //--------------------------------------------------------------------------
-
-  template <class T>
-  inline void Parametrized::registerParameter(const std::string& parameterName,
-        const std::string& parameterDescription,
-        T& parameter,
-        const T& defaultVal,
-        int setSize ) {
-    checkForExistingParameter( parameterName );
-    _parameters[ parameterName ] = std::make_shared<ParameterT<T>>( parameterName , parameterDescription,
-            parameter, defaultVal,
-            false , setSize) ;
-  }
-
-  //--------------------------------------------------------------------------
-
-  template <class T>
-  inline void Parametrized::registerOptionalParameter(const std::string& parameterName,
-         const std::string& parameterDescription,
-         T& parameter,
-         const T& defaultVal,
-         int setSize ) {
-     checkForExistingParameter( parameterName );
-     _parameters[ parameterName ] = std::make_shared<ParameterT<T>>( parameterName , parameterDescription,
-             parameter, defaultVal,
-             true , setSize) ;
-  }
-
-  //--------------------------------------------------------------------------
-
-  template <typename T>
-  inline T Parametrized::getParameter( const std::string& name ) const {
-    auto parameter = _parameters.find( name ) ;
-    if (parameter == _parameters.end() ) {
-      throw Exception( "Parameter " + name + " not found!" ) ;
-    }
-    auto parameterT = std::static_pointer_cast<ParameterT<T>>( parameter->second ) ;
-    if ( nullptr == parameterT ) {
-      throw Exception( "Wrong parameter cast !" ) ;
-    }
-    return (parameterT->valueSet() ? parameterT->valueT() : parameterT->defaultValueT() ) ;
-  }
+  // helper types
+  using IntParameter = Parameter<int> ;
+  using UIntParameter = Parameter<unsigned int> ;
+  using FloatParameter = Parameter<float> ;
+  using DoubleParameter = Parameter<double> ;
+  using BoolParameter = Parameter<bool> ;
+  using StringParameter = Parameter<std::string> ;
+  using IntVectorParameter = VectorParameter<int> ;
+  using UIntVectorParameter = VectorParameter<unsigned int> ;
+  using FloatVectorParameter = VectorParameter<float> ;
+  using DoubleVectorParameter = VectorParameter<double> ;
+  using BoolVectorParameter = VectorParameter<bool> ;
+  using StringVectorParameter = VectorParameter<std::string> ;
 
 } // end namespace marlin
 #endif
