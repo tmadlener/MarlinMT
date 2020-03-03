@@ -335,14 +335,13 @@ namespace marlin {
     
     template <typename T>
     struct type_info {
-      static constexpr const char* type = typeid(T).name() ;
+      static const char* type ;
     };
+    
+    template <typename T> const char* type_info<T>::type(typeid(T).name());
 
 #define TYPE_INFO_IMPL( type_id, str ) \
-    template <> \
-    struct type_info<type_id> { \
-      static constexpr const char* type = str ; \
-    };
+    template <> const char* type_info<type_id>::type(str);
 
     TYPE_INFO_IMPL( std::nullptr_t, "null" )
     TYPE_INFO_IMPL( bool, "bool" )
@@ -360,7 +359,7 @@ namespace marlin {
     TYPE_INFO_IMPL( std::vector<double>, "vector<double>" )
     TYPE_INFO_IMPL( std::vector<char>, "vector<char>" )
     TYPE_INFO_IMPL( std::vector<std::string>, "vector<string>" )
-    
+
 #undef TYPE_INFO_IMPL
 
     //--------------------------------------------------------------------------
