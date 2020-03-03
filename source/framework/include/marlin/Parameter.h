@@ -293,7 +293,7 @@ namespace marlin {
      *  @brief  Unset all registered parameters
      */
     void unset() {
-      std::for_each( begin(), end(), []( auto &p ){ p->reset(); } ) ;
+      std::for_each( begin(), end(), []( auto &p ){ p.second->reset(); } ) ;
     }
     
     iterator begin() { return _parameters.begin() ; }
