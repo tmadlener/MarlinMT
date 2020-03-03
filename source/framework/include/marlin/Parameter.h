@@ -455,7 +455,7 @@ namespace marlin {
      *  @param  desc the parameter description
      */
     inline Parameter( Configurable &conf, const std::string &na, const std::string &desc ) :
-      ParameterBase<T>( EParameterType::eSimple, na, desc ) {
+      ParameterBase<T>( conf, EParameterType::eSimple, na, desc ) {
       /* nop */
     }
     
@@ -468,7 +468,7 @@ namespace marlin {
      *  @param  defVal the parameter default value
      */
     inline Parameter( Configurable &conf, const std::string &na, const std::string &desc, const T &defVal ) :
-      ParameterBase<T>( EParameterType::eSimple, na, desc, defVal ) {
+      ParameterBase<T>( conf, EParameterType::eSimple, na, desc, defVal ) {
       /* nop */
     }
   };
