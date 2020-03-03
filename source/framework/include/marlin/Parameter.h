@@ -218,7 +218,7 @@ namespace marlin {
      *  @param  value the address to the parameter value
      */
     template <typename T>
-    inline std::weak_ptr<ParameterImpl> addParameter( EParameterType paramType, const std::string &name, const std::string &desc, std::shared_ptr<T> value ) {
+    inline std::shared_ptr<ParameterImpl> addParameter( EParameterType paramType, const std::string &name, const std::string &desc, std::shared_ptr<T> value ) {
       checkParameter( name ) ;
       auto param = std::make_shared<ParameterImpl>( paramType, name, desc, value ) ;
       _parameters[ name ] = param ;
@@ -322,6 +322,30 @@ namespace marlin {
     /**
      *  @brief  Constructor
      * 
+     *  @param  paramType the parameter type
+     *  @param  na the parameter name
+     *  @param  desc the parameter description
+     */
+    inline ParameterBase( EParameterType paramType, const std::string &na, const std::string &desc ) {
+      _impl = std::make_shared<ParameterImpl>( paramType, na, desc, _value ) ;
+    }
+    
+    /**
+     *  @brief  Constructor
+     * 
+     *  @param  paramType the parameter type
+     *  @param  na the parameter name
+     *  @param  desc the parameter description
+     *  @param  defVal the default parameter value
+     */
+    inline ParameterBase( EParameterType paramType, const std::string &na, const std::string &desc, const T &defVal ) :
+      _defaultValue( defVal ) {
+      _impl = std::make_shared<ParameterImpl>( paramType, na, desc, _value ) ;
+    }
+    
+    /**
+     *  @brief  Constructor
+     * 
      *  @param  conf a configurable object to which the parameter is added
      *  @param  paramType the parameter type
      *  @param  na the parameter name
@@ -349,49 +373,49 @@ namespace marlin {
      *  @brief  Get the parameter type
      */
     inline EParameterType type() const {
-      return _impl.lock()->type() ;
+      return _impl->type() ;
     }
     
     /**
      *  @brief  Get the property name
      */
     inline const std::string& name() const {
-      return _impl.lock()->name() ;
+      return _impl->name() ;
     }
     
     /**
      *  @brief  Get the parameter description
      */
     inline const std::string& description() const {
-      return _impl.lock()->description() ;
+      return _impl->description() ;
     }
     
     /**
      *  @brief  Whether the parameter has been set
      */
     inline bool isSet() const {
-      return _impl.lock()->isSet() ;
+      return _impl->isSet() ;
     }
     
     /**
      *  @brief  Get the parameter value as string
      */
     inline std::string str() const {
-      return _impl.lock()->str() ;
+      return _impl->str() ;
     }
     
     /**
      *  @brief  Get the parameter type as string
      */
     inline std::string typeStr() const {
-      return _impl.lock()->typeStr() ;
+      return _impl->typeStr() ;
     }
     
     /**
      *  @brief  Get a type index object of the underlying type
      */
     inline const std::type_index &typeIndex() const {
-      return _impl.lock()->typeIndex() ;
+      return _impl->typeIndex() ;
     }
     
     /**
@@ -416,7 +440,7 @@ namespace marlin {
      *  @brief  Reset the parameter value (only)
      */
     inline void reset() {
-      _impl.lock()->reset() ;
+      _impl->reset() ;
     }
     
   protected:
@@ -424,8 +448,8 @@ namespace marlin {
     std::shared_ptr<T>             _value { std::make_shared<T>() } ;
     /// The optional default value
     std::optional<T>               _defaultValue {} ;
-    /// A weak pointer on the parameter implementation
-    std::weak_ptr<ParameterImpl>   _impl {} ;
+    /// A shared pointer on the parameter implementation
+    std::shared_ptr<ParameterImpl> _impl {} ;
   };
   
   //--------------------------------------------------------------------------
@@ -446,6 +470,29 @@ namespace marlin {
     Parameter<T> &operator=( const Parameter<T> & ) = default ;
     /// Default destructor
     ~Parameter() = default ;
+
+    /**
+     *  @brief  Constructor
+     *  
+     *  @param  na the parameter name
+     *  @param  desc the parameter description
+     */
+    inline Parameter( const std::string &na, const std::string &desc ) :
+      ParameterBase<T>( EParameterType::eSimple, na, desc ) {
+      /* nop */
+    }
+    
+    /**
+     *  @brief  Constructor
+     *  
+     *  @param  na the parameter name
+     *  @param  desc the parameter description
+     *  @param  defVal the parameter default value
+     */
+    inline Parameter( const std::string &na, const std::string &desc, const T &defVal ) :
+      ParameterBase<T>( EParameterType::eSimple, na, desc, defVal ) {
+      /* nop */
+    }
     
     /**
      *  @brief  Constructor
@@ -502,7 +549,7 @@ namespace marlin {
      *  @param  na the parameter name
      *  @param  desc the parameter description
      */
-    inline VectorParameter( Configurable &conf, const std::string &na, const std::string &desc ) :
+    inline VectorParameter( const std::string &na, const std::string &desc ) :
       Base( EParameterType::eVector, na, desc ) {
       /* nop */
     }
@@ -515,8 +562,33 @@ namespace marlin {
      *  @param  desc the parameter description
      *  @param  defVal the parameter default value
      */
-    inline VectorParameter( Configurable &conf, const std::string &na, const std::string &desc, const T &defVal ) :
+    inline VectorParameter( const std::string &na, const std::string &desc, const T &defVal ) :
       Base( EParameterType::eVector, na, desc, defVal ) {
+      /* nop */
+    }
+    
+    /**
+     *  @brief  Constructor
+     *  
+     *  @param  conf the configurable object owning the parameter
+     *  @param  na the parameter name
+     *  @param  desc the parameter description
+     */
+    inline VectorParameter( Configurable &conf, const std::string &na, const std::string &desc ) :
+      Base( conf, EParameterType::eVector, na, desc ) {
+      /* nop */
+    }
+    
+    /**
+     *  @brief  Constructor
+     *  
+     *  @param  conf the configurable object owning the parameter
+     *  @param  na the parameter name
+     *  @param  desc the parameter description
+     *  @param  defVal the parameter default value
+     */
+    inline VectorParameter( Configurable &conf, const std::string &na, const std::string &desc, const T &defVal ) :
+      Base( conf, EParameterType::eVector, na, desc, defVal ) {
       /* nop */
     }
     
