@@ -364,90 +364,116 @@ namespace marlin {
 
     //--------------------------------------------------------------------------
 
-    template <typename T>
-    inline std::string to_string( const T &value ) {
-      std::ostringstream oss ;
-      if ((oss << value).fail()) {
-        MARLIN_THROW( "to_string failure: " + std::string(details::type_info<T>::type) ) ;
-      }
-      return oss.str() ;
-    }
-    
-    template <>
-    inline std::string to_string( const bool &value ) {
-      return value ? "true" : "false" ;
-    }
-    
-    template <>
-    inline std::string to_string( const std::string &value ) {
-      return value ;
-    }
-    
-    //--------------------------------------------------------------------------
     
     template <typename T>
-    inline std::string to_string( const std::vector<T> &input ) {
-      std::stringstream ss ;
-      for( auto iter = input.begin() ; iter != input.end() ; ++iter ) {
-        ss << typeToString( *iter ) ;
-        if( std::next(iter) != input.end() ) {
-          ss << " " ;
+    struct convert {
+      static std::string to_string( const T &value ) {
+        std::ostringstream oss ;
+        if ((oss << value).fail()) {
+          MARLIN_THROW( "to_string failure: " + std::string(details::type_info<T>::type) ) ;
         }
+        return oss.str() ;
       }
-      return ss.str() ;
-    }
-    
-    template <>
-    inline std::string to_string( const std::vector<std::string> &input ) {
-      std::stringstream ss ;
-      for( auto iter = input.begin() ; iter != input.end() ; ++iter ) {
-        ss << *iter ;
-        if( std::next(iter) != input.end() ) {
-          ss << " " ;
+      
+      static T from_string( const std::string &str ) {
+        T t ;
+        std::istringstream iss(str) ;
+        if ((iss >> t).fail()) {
+          MARLIN_THROW( "from_string failure: " + std::string(details::type_info<T>::type) ) ;
         }
+        return t ;
       }
-      return ss.str() ;
-    }
+    };
     
-    //--------------------------------------------------------------------------
-    
-    template <typename T>
-    inline T from_string( const std::string &str ) {
-      T t ;
-      std::istringstream iss(str) ;
-      if ((iss >> t).fail()) {
-        MARLIN_THROW( "from_string failure: " + std::string(details::type_info<T>::type) ) ;
-      }
-      return t ;
-    }
     
     template <>
-    inline std::string from_string( const std::string &str ) {
-      return str ;
-    }
-
+    struct convert<std::string> {
+      static std::string to_string( const std::string &value ) {
+        return value ;
+      }
+      
+      static std::string from_string( const std::string &str ) {
+        return str ;
+      }
+    };
+    
+    
     template <>
-    inline bool from_string( const std::string &str ) {
-      static const auto true_list = { "true", "1", "on" } ;
-      static const auto false_list = { "false", "0", "off" } ;
-      auto strcp = str ;
-      std::transform(str.begin(), str.end(), strcp.begin(),
-        [](unsigned char c){ return std::tolower(c); } ) ;
-      if( std::find( std::begin(true_list), std::end(true_list), strcp ) != std::end(true_list) ) {
-        return true ;
+    struct convert<bool> {
+      static std::string to_string( const bool &value ) {
+        return value ? "true" : "false" ;
       }
-      if( std::find( std::begin(false_list), std::end(false_list), strcp ) != std::end(false_list) ) {
-        return false ;
+      
+      static bool from_string( const std::string &str ) {
+        static const auto true_list = { "true", "1", "on" } ;
+        static const auto false_list = { "false", "0", "off" } ;
+        auto strcp = str ;
+        std::transform(str.begin(), str.end(), strcp.begin(),
+          [](unsigned char c){ return std::tolower(c); } ) ;
+        if( std::find( std::begin(true_list), std::end(true_list), strcp ) != std::end(true_list) ) {
+          return true ;
+        }
+        if( std::find( std::begin(false_list), std::end(false_list), strcp ) != std::end(false_list) ) {
+          return false ;
+        }
+        MARLIN_THROW( "from_string failure: bool" ) ;
       }
-      MARLIN_THROW( "from_string failure: bool" ) ;
-    }
-
+    };
+    
     template <typename T>
-    inline std::vector<T> from_string( const std::vector<std::string> &strs ) {
-      std::vector<T> result( strs.size() ) ;
-      std::transform( strs.begin(), strs.end(), std::back_inserter( result ), from_string<T> ) ;
-      return result ;
-    }
+    struct convert<std::vector<T>> {
+      static std::string to_string( const std::vector<T> &value ) {
+        std::stringstream ss ;
+        for( auto iter = value.begin() ; iter != value.end() ; ++iter ) {
+          ss << details::convert<T>::to_string( *iter ) ;
+          if( std::next(iter) != value.end() ) {
+            ss << " " ;
+          }
+        }
+        return ss.str() ;
+      }
+      
+      static std::vector<T> from_string( const std::string &str ) {
+        std::string::size_type lastPos = str.find_first_not_of(" ", 0);
+        std::string::size_type pos = str.find_first_of(" ", lastPos);
+        typename std::vector<T> tokens ;
+        while ((std::string::npos != pos) || (std::string::npos != lastPos)) {
+          tokens.emplace_back(
+            details::convert<T>::from_string(str.substr(lastPos, pos - lastPos))
+          );
+          lastPos = str.find_first_not_of(" ", pos) ;
+          pos = str.find_first_of(" ", lastPos) ;
+        }
+        return tokens ;
+      }
+    };
+    
+    
+    template <>
+    struct convert<std::vector<std::string>> {
+      static std::string to_string( const std::vector<std::string> &value ) {
+        std::stringstream ss ;
+        for( auto iter = value.begin() ; iter != value.end() ; ++iter ) {
+          ss << *iter ;
+          if( std::next(iter) != value.end() ) {
+            ss << " " ;
+          }
+        }
+        return ss.str() ;
+      }
+      
+      static std::vector<std::string> from_string( const std::string &str ) {
+        std::string::size_type lastPos = str.find_first_not_of(" ", 0);
+        std::string::size_type pos = str.find_first_of(" ", lastPos);
+        std::vector<std::string> tokens ;
+        while ((std::string::npos != pos) || (std::string::npos != lastPos)) {
+          tokens.emplace_back( str.substr(lastPos, pos - lastPos) ) ;
+          lastPos = str.find_first_not_of(" ", pos) ;
+          pos = str.find_first_of(" ", lastPos) ;
+        }
+        return tokens ;
+      }
+    };
     
   }
 
