@@ -1,5 +1,9 @@
 #pragma once
 
+// -- std headers
+#include <typeindex>
+
+// -- marlin headers
 #include <marlin/Logging.h>
 #include <marlin/Parameter.h>
 
@@ -30,8 +34,35 @@ namespace marlin {
     /// Default destructor
     virtual ~Component() = default ;
     
-    /// Constructor with component name
-    Component( const std::string &name ) ;
+    /// Constructor with component type
+    Component( const std::string &type ) ;
+    
+    /**
+     *  @brief  Get the component name
+     */
+    const std::string &componentType() const ;
+    
+    /**
+     *  @brief  Get the component name
+     */
+    const std::string &componentName() const ;
+    
+    /**
+     *  @brief  Set the component name
+     *  
+     *  @param  name the component name
+     */
+    void setComponentName( const std::string &name ) ;
+    
+    /**
+     *  @brief  Get the component description
+     */
+    const std::string &componentDescription() const ;
+    
+    /**
+     *  @brief  Initialize the component
+     */
+    virtual void initComponent() { /* nop */ }
     
     /**
      *  @brief  Get the application in which the component is registered
@@ -60,18 +91,29 @@ namespace marlin {
     /// Shortcut for log<ERROR>()
     Logging::StreamType error() const ;
     
-    inline const std::string &componentName() const {
-      return _componentName ;
-    }
+  protected:
+    /**
+     *  @brief  Get the component description
+     */
+    void setComponentDescription( const std::string &description ) ;
     
   private:
     /// Setup the component. Called by the application before initialization
     void setup( Application *app ) ;
     
-  private:
+  protected:
+    /// The component type
+    std::string              _componentType {} ;
+    /// The component name
     std::string              _componentName {} ;
+    /// The component description
+    std::string              _componentDescription {} ;
+    /// The application in which the component has been registered
     Application             *_application {nullptr} ;
+    /// The logger instance
     LoggerPtr                _logger {nullptr} ;
+    /// The verbosity level of the logger (parameter)
+    StringParameter          _verbosity { *this, "Verbosity", "The component verbosity level", "MESSAGE" } ;
   };
   
 }
