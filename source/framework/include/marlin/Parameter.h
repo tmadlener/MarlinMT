@@ -5,7 +5,7 @@
 #include <iostream>
 #include <string>
 #include <sstream>
-#include <typeinfo>
+#include <typeindex>
 #include <memory>
 #include <vector>
 #include <functional>
@@ -53,57 +53,51 @@ namespace marlin {
       _typeIndex(typeid(T)) {
       _typeFunction = [] { return details::type_info<T>::type ; };
       _resetFunction = [this] { *std::static_pointer_cast<T>( _value ).get() = T() ; };
-      _strFunction = [this] { return details::to_string( get<T>() ) ; };
+      _strFunction = [this] { return details::convert<T>::to_string( get<T>() ) ; };
+      _fromStrFunction = [this] ( const std::string &value ) { 
+        *std::static_pointer_cast<T>( _value ).get() = details::convert<T>::from_string( value ) ; 
+      };
     }
     
     /**
      *  @brief  Get the parameter name
      */
-    inline EParameterType type() const {
-      return _type ;
-    }    
+    EParameterType type() const ;
         
     /**
      *  @brief  Get the parameter name
      */
-    inline const std::string& name() const {
-      return _name ;
-    }
+    const std::string& name() const ;
     
     /**
      *  @brief  Get the parameter description
      */
-    inline const std::string& description() const {
-      return _description ;
-    }
+    const std::string& description() const ;
     
     /**
      *  @brief  Whether the parameter has been set
      */
-    inline bool isSet() const {
-      return _isSet ;
-    }
+    bool isSet() const ;
     
     /**
      *  @brief  Get the parameter value as string
      */
-    inline std::string str() const {
-      return _strFunction() ;
-    }
+    std::string str() const ;
+    
+    /**
+     *  @brief  Set the parameter value from a string
+     */
+    void str( const std::string &value ) const ;
     
     /**
      *  @brief  Get the parameter type as string
      */
-    inline std::string typeStr() const {
-      return _typeFunction() ;
-    }
+    std::string typeStr() const ;
     
     /**
      *  @brief  Get a type index object of the underlying type
      */
-    inline const std::type_index &typeIndex() const {
-      return _typeIndex ;
-    }
+    const std::type_index &typeIndex() const ;
     
     /**
      *  @brief  Check whether the template parameter matches the internal implementation type
@@ -167,30 +161,29 @@ namespace marlin {
     /**
      *  @brief  Reset the parameter value
      */
-    inline void reset() {
-      _resetFunction() ;
-      _isSet = false ;
-    }
+    void reset() ;
     
   private:
     /// The parameter type
-    EParameterType                   _type {} ;
+    EParameterType                               _type {} ;
     /// The parameter name
-    std::string                      _name {} ;
+    std::string                                  _name {} ;
     /// The parameter description
-    std::string                      _description {} ;
+    std::string                                  _description {} ;
     /// The function converting the parameter type to string
-    std::function<std::string()>     _typeFunction {} ;
+    std::function<std::string()>                 _typeFunction {} ;
     /// The function converting the parameter value to string
-    std::function<std::string()>     _strFunction {} ;
+    std::function<std::string()>                 _strFunction {} ;
+    ///
+    std::function<void(const std::string &)>     _fromStrFunction {} ;
     /// The function resetting the parameter value
-    std::function<void()>            _resetFunction {} ;
+    std::function<void()>                        _resetFunction {} ;
     /// Whether the parameter is set
-    bool                             _isSet {false} ;
+    bool                                         _isSet {false} ;
     /// The address to the parameter value
-    std::shared_ptr<void>            _value {nullptr} ;
+    std::shared_ptr<void>                        _value {nullptr} ;
     /// The type index object of the underlying parameter type
-    std::type_index                  _typeIndex ;
+    std::type_index                              _typeIndex ;
   };
   
   //--------------------------------------------------------------------------
@@ -254,52 +247,36 @@ namespace marlin {
      *  
      *  @param  name the parameter name to check
      */
-    inline void checkParameter( const std::string &name ) const {
-      if( exists( name ) ) {
-        MARLIN_THROW( "Parameter '" + name +  "' already present" ) ;
-      }
-    }
+    void checkParameter( const std::string &name ) const ;
 
     /**
      *  @brief  Return true if the parameter has been registered
      * 
      *  @param  name the parameter name to check
      */
-    inline bool exists( const std::string &name ) const {
-      return _parameters.find( name ) != _parameters.end() ;
-    }
+    bool exists( const std::string &name ) const ;
 
     /**
      *  @brief  Returns true if the parameter exists and is set, false otherwise
      * 
      *  @param  name the parameter name to check
      */
-    inline bool isSet( const std::string &name ) const {
-      auto iter = _parameters.find( name ) ;
-      if( iter == _parameters.end() ) {
-        return false ;
-      }
-      iter->second->isSet() ;
-    }
+    bool isSet( const std::string &name ) const ;
 
     /**
      *  @brief  Remove all parameters
      */
-    void clear() {
-      _parameters.clear() ;
-    }
+    void clear() ;
     
     /**
      *  @brief  Unset all registered parameters
      */
-    void unset() {
-      std::for_each( begin(), end(), []( auto &p ){ p.second->reset(); } ) ;
-    }
+    void unset() ;
     
-    iterator begin() { return _parameters.begin() ; }
-    const_iterator begin() const { return _parameters.begin() ; }    
-    iterator end() { return _parameters.end() ; }
-    const_iterator end() const { return _parameters.end() ; }
+    iterator begin() ;
+    const_iterator begin() const ;
+    iterator end() ;
+    const_iterator end() const ;
     
   private:
     /// The parameter map
