@@ -70,13 +70,6 @@ namespace marlin {
   
   //--------------------------------------------------------------------------
 
-  ConfigSection &ConfigSection::setParameter( const std::string &n, const std::string &val ) {
-    _parameters.insert_or_assign( n, val ) ;
-    return *this ;
-  }
-  
-  //--------------------------------------------------------------------------
-
   bool ConfigSection::hasParameter( const std::string &n ) const {
     return (_parameters.end() != _parameters.find( n )) ;
   }
