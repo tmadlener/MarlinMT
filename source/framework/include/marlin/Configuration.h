@@ -93,7 +93,11 @@ namespace marlin {
      *  @param  n the parameter name
      *  @param  val the parameter value
      */
-    ConfigSection &setParameter( const std::string &n, const std::string &val ) ;
+    template <typename T>
+    ConfigSection &setParameter( const std::string &n, const T &val ) {
+      _parameters.insert_or_assign( n, details::convert<T>::to_string(val) ) ;
+      return *this ;
+    }
     
     /**
      *  @brief  Get a parameter value as type T. 
@@ -295,6 +299,15 @@ namespace marlin {
     
     /// Default destructor
     virtual ~ConfigParser() = default ;
+    
+    /**
+     *  @brief  Initialize the parser. The descriptor string can be e.g:
+     *     - input/output file name
+     *     - input/output database description
+     *     
+     *  @param desc a descriptor string
+     */
+    virtual void init( const std::string &desc ) = 0 ;
 
     /**
      *  @brief  Read the configuration and populate the configuration object.
