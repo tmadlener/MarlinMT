@@ -332,7 +332,7 @@ namespace marlin {
     return ss.str() ;
   }
   
-    namespace details {
+  namespace details {
     
     template <typename T>
     struct type_info {
@@ -386,6 +386,7 @@ namespace marlin {
       }
     };
     
+    //--------------------------------------------------------------------------
     
     template <>
     struct convert<std::string> {
@@ -397,6 +398,8 @@ namespace marlin {
         return str ;
       }
     };
+    
+    //--------------------------------------------------------------------------
     
     
     template <>
@@ -420,6 +423,8 @@ namespace marlin {
         MARLIN_THROW( "from_string failure: bool" ) ;
       }
     };
+    
+    //--------------------------------------------------------------------------
     
     template <typename T>
     struct convert<std::vector<T>> {
@@ -449,6 +454,7 @@ namespace marlin {
       }
     };
     
+    //--------------------------------------------------------------------------
     
     template <>
     struct convert<std::vector<std::string>> {
@@ -475,6 +481,58 @@ namespace marlin {
         return tokens ;
       }
     };
+    
+    //--------------------------------------------------------------------------
+    
+    template <typename T>
+    inline std::vector<T> split_string(const std::string &str, const std::string &delimiter, size_t maxTokens = std::numeric_limits<std::size_t>::max()) {
+      if( 0 == maxTokens ) {
+        MARLIN_THROW( "maxTokens can't be 0" ) ;
+      }
+      std::string::size_type lastPos = str.find_first_not_of(delimiter, 0) ;
+      std::string::size_type pos = str.find_first_of(delimiter, lastPos) ;
+      typename std::vector<T> tokens ;
+      while ((std::string::npos != pos) || (std::string::npos != lastPos)) {
+        if( tokens.size()+1 >= maxTokens ) {
+          tokens.emplace_back(
+            details::convert<T>::from_string(str.substr(lastPos))
+          );
+          break ;
+        }
+        tokens.emplace_back(
+          details::convert<T>::from_string(str.substr(lastPos, pos - lastPos))
+        );
+        lastPos = str.find_first_not_of(delimiter, pos) ;
+        pos = str.find_first_of(delimiter, lastPos) ;
+      }
+      return tokens ;
+    }
+    
+    //--------------------------------------------------------------------------
+    
+    template <>
+    inline std::vector<std::string> split_string(const std::string &str, const std::string &delimiter, size_t maxTokens) {
+      if( 0 == maxTokens ) {
+        MARLIN_THROW( "maxTokens can't be 0" ) ;
+      }
+      std::string::size_type lastPos = str.find_first_not_of(delimiter, 0) ;
+      std::string::size_type pos = str.find_first_of(delimiter, lastPos) ;
+      std::vector<std::string> tokens ;
+      while ((std::string::npos != pos) || (std::string::npos != lastPos)) {
+        if( tokens.size()+1 >= maxTokens ) {
+          tokens.emplace_back(
+            str.substr(lastPos)
+          );
+          break ;
+        }
+        tokens.emplace_back(
+          str.substr(lastPos, pos - lastPos)
+        );
+        lastPos = str.find_first_not_of(delimiter, pos) ;
+        pos = str.find_first_of(delimiter, lastPos) ;
+      }
+      return tokens ;
+    }
     
   }
 
