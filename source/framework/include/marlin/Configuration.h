@@ -290,6 +290,9 @@ namespace marlin {
     ConstantsMap               _constants {} ;
   };
   
+  /// Stream operator
+  std::ostream &operator<<( std::ostream &stream, const Configuration &cfg ) ;
+  
   //--------------------------------------------------------------------------
   //--------------------------------------------------------------------------
   

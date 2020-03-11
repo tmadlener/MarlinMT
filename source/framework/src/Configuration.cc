@@ -155,6 +155,37 @@ namespace marlin {
   }
   
   //--------------------------------------------------------------------------
+
+  void printSection( const ConfigSection &section, std::ostream &stream, const std::string &prefix ) {
+    std::string localprefix = prefix + " |";
+    stream << prefix << " + Section: " << section.name() << std::endl ;
+    auto pnames = section.parameterNames() ;
+    for( auto &pn : pnames ) {
+      stream << localprefix << " - " << pn << " = " << section.parameter<std::string>( pn ) << std::endl ;
+    }
+    auto sections = section.subsectionNames() ;
+    for( auto &sec : sections ) {
+      printSection( section.section( sec ), stream, localprefix ) ;
+    }
+  }
+  
+  std::ostream &operator<<( std::ostream &stream, const Configuration &cfg ) {
+    auto constants = cfg.constants() ;
+    if( not constants.empty() ) {
+      stream << "==== Constants =====" << std::endl ;
+      for( auto &kv : constants ) {
+        stream << " * " << kv.first << " : " << kv.second << std::endl ;
+      }
+    }
+    auto sections = cfg.sections() ;
+    for( auto &sec : sections ) {
+      printSection( cfg.section( sec ), stream, "" ) ;
+    }
+    return stream ;
+  }
+  
+  //--------------------------------------------------------------------------
+  //--------------------------------------------------------------------------
   
   std::pair<std::string, std::string> ConfigHelper::splitPluginInput( const std::string &str ) {
     auto splitVals = details::split_string<std::string>( str, ":", 2 ) ;
