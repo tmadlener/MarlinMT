@@ -1,9 +1,11 @@
 // -- marlin headers
 #include <marlin/Configuration.h>
 #include <marlin/Parameter.h>
+#include <marlin/PluginManager.h>
 
 // -- std headers
 #include <algorithm>
+#include <filesystem>
 
 namespace marlin {
   
@@ -146,5 +148,55 @@ namespace marlin {
     }
   }
   
+  //--------------------------------------------------------------------------
+  
+  std::pair<std::string, std::string> ConfigHelper::splitPluginInput( const std::string &str ) {
+    auto splitVals = details::split_string<std::string>( str, ":", 2 ) ;
+    return (2 == splitVals.size()) ? std::pair{ splitVals[0], splitVals[1] } : std::pair{ "", splitVals[0] } ;
+  }
+  
+  //--------------------------------------------------------------------------
+  
+  void ConfigHelper::readConfig( const std::string &str, Configuration &cfg, const ConfigReader::ReplacementParametersMap &params ) {
+    auto pluginInput = ConfigHelper::splitPluginInput( str ) ;
+    // if no plugin guess it from the input string
+    if( pluginInput.first.empty() ) {
+      std::filesystem::path filepath = pluginInput.second ;
+      if( filepath.extension().string() == ".xml" ) {
+        pluginInput.first = "XMLConfigReader" ;
+      }
+    }
+    if( pluginInput.first.empty() ) {
+      MARLIN_THROW( "No config reader plugin found in config string. Please specify your config as 'plugin_name:input'" ) ;
+    }
+    auto reader = PluginManager::instance().create<ConfigReader>( pluginInput.first ) ;
+    if( nullptr == reader ) {
+      MARLIN_THROW( "No ConfigReader plugin found for type '" + pluginInput.first + "'" ) ;
+    }
+    reader->init( pluginInput.second ) ;
+    reader->read( cfg, params ) ;
+  }
+  
+  //--------------------------------------------------------------------------
+  
+  void ConfigHelper::writeConfig( const std::string &str, Configuration &cfg ) {
+    auto pluginInput = ConfigHelper::splitPluginInput( str ) ;
+    // if no plugin guess it from the input string
+    if( pluginInput.first.empty() ) {
+      std::filesystem::path filepath = pluginInput.second ;
+      if( filepath.extension().string() == ".xml" ) {
+        pluginInput.first = "XMLConfigWriter" ;
+      }
+    }
+    if( pluginInput.first.empty() ) {
+      MARLIN_THROW( "No config writer plugin found in config string. Please specify your config as 'plugin_name:input'" ) ;
+    }
+    auto writer = PluginManager::instance().create<ConfigWriter>( pluginInput.first ) ;
+    if( nullptr == writer ) {
+      MARLIN_THROW( "No ConfigWriter plugin found for type '" + pluginInput.first + "'" ) ;
+    }
+    writer->init( pluginInput.second ) ;
+    writer->write( cfg ) ;
+  }
   
 }

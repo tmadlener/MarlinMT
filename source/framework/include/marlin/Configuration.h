@@ -5,7 +5,6 @@
 #include <map>
 #include <vector>
 
-
 // -- marlin headers
 #include <marlin/Utils.h>
 #include <marlin/Exceptions.h>
@@ -290,20 +289,20 @@ namespace marlin {
   //--------------------------------------------------------------------------
   
   /**
-   *  @brief  ConfigParser base class
-   *  Interface for reading and writing configuration in different formats
+   *  @brief  ConfigReader base class
+   *  Interface for reading configuration
    */
-  class ConfigParser {
+  class ConfigReader {
   public:
     using ReplacementParametersMap = std::map<std::string,std::map<std::string,std::string>> ;
     
     /// Default destructor
-    virtual ~ConfigParser() = default ;
+    virtual ~ConfigReader() = default ;
     
     /**
      *  @brief  Initialize the parser. The descriptor string can be e.g:
-     *     - input/output file name
-     *     - input/output database description
+     *     - file name
+     *     - database description
      *     
      *  @param desc a descriptor string
      */
@@ -316,13 +315,77 @@ namespace marlin {
      *  @param  cfg the configuration object to populate
      */
     virtual void read( Configuration &cfg, const ReplacementParametersMap &params = {} ) = 0 ;
+  };
+  
+  //--------------------------------------------------------------------------
+  //--------------------------------------------------------------------------
+  
+  /**
+   *  @brief  ConfigWriter base class
+   *  Interface for writing configuration
+   */
+  class ConfigWriter {
+  public:    
+    /// Default destructor
+    virtual ~ConfigWriter() = default ;
     
+    /**
+     *  @brief  Initialize the parser. The descriptor string can be e.g:
+     *     - file name
+     *     - database description
+     *     
+     *  @param desc a descriptor string
+     */
+    virtual void init( const std::string &desc ) = 0 ;
+
     /**
      *  @brief  Write the configuration object
      * 
      *  @param  cfg the configuration object to write
      */
     virtual void write( const Configuration &cfg ) = 0 ;
+  };
+  
+  //--------------------------------------------------------------------------
+  //--------------------------------------------------------------------------
+  
+  /**
+   *  @brief  ConfigHelper class
+   *  A simple class with helper methods for configuration
+   */
+  class ConfigHelper {
+    // Static API only
+    ConfigHelper() = delete ;
+    ~ConfigHelper() = delete ;
+    
+  public:
+    /**
+     *  @brief  Split the string to a pair "plugin, input".
+     *  The separator is a colon ':' character.
+     *  For example:
+     *    - "XMLConfigReader:/path/to/myfile.xml"
+     *    - "XMLConfigWriter:/path/to/myfile.xml"
+     * 
+     *  @param  str the input string to split
+     */
+    static std::pair<std::string, std::string> splitPluginInput( const std::string &str ) ;
+    
+    /**
+     *  @brief  Read the configuration using a ConfigReader plugin.
+     *  
+     *  @param  str the reader descriptor (file name, database config, ...)
+     *  @param  cfg the configuration object to populate
+     *  @param  params optional replacement parameters
+     */
+    static void readConfig( const std::string &str, Configuration &cfg, const ConfigReader::ReplacementParametersMap &params = {} ) ;
+    
+    /**
+     *  @brief  Write the configuration using a ConfigWriter plugin.
+     *  
+     *  @param  str the writer descriptor (file name, database config, ...)
+     *  @param  cfg the configuration object to write
+     */
+    static void writeConfig( const std::string &str, Configuration &cfg ) ;
   };
     
 }
