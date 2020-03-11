@@ -534,6 +534,18 @@ namespace marlin {
       return tokens ;
     }
     
+    //--------------------------------------------------------------------------
+    
+    template <typename K, typename V>
+    inline std::vector<K> keys( const std::map<K,V> &m ) {
+      typename std::vector<K> keyRet {} ;
+      keyRet.reserve( m.size() ) ;
+      for( auto &kv : m ) {
+        keyRet.push_back( kv.first ) ;
+      }
+      return keyRet ;
+    }
+    
   }
 
 } // end namespace marlin
