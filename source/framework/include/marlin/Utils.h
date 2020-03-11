@@ -9,6 +9,7 @@
 #include <typeinfo>
 #include <chrono>
 #include <vector>
+#include <algorithm>
 
 // -- marlin headers
 #include <marlin/Exceptions.h>
