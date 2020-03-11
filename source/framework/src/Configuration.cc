@@ -129,6 +129,12 @@ namespace marlin {
   
   //--------------------------------------------------------------------------
   
+  std::vector<std::string> Configuration::sections() const {
+    return details::keys( _sections ) ;
+  }
+  
+  //--------------------------------------------------------------------------
+  
   void Configuration::replaceConstants( std::string& str ) const {
     size_t pos = str.find("${") ;
     while( pos != std::string::npos ) {

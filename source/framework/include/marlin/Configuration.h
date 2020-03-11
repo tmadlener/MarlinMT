@@ -264,6 +264,11 @@ namespace marlin {
      *  @param  sn the section name
      */
     const ConfigSection &section( const std::string &sn ) const ;
+    
+    /**
+     *  @brief  Get the list of subsections
+     */
+    std::vector<std::string> sections() const ;
     ///@}    
 
     /** @name Helper methods
