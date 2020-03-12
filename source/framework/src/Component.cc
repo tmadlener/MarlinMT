@@ -105,4 +105,10 @@ namespace marlin {
     message() << "----------------------------------------------------------" << std::endl ;
   }
   
+  //--------------------------------------------------------------------------
+  
+  bool Component::isInitialized() const {
+    return ( nullptr == _application ) ;
+  }
+  
 }

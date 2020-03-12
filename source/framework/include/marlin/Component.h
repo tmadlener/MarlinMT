@@ -106,6 +106,11 @@ namespace marlin {
      */
     void setVerbosity( const std::string &level ) ;
     
+    /**
+     *  @brief  Whether the component has been initialized
+     */
+    bool isInitialized() const ;
+    
   protected:
     /**
      *  @brief  Get the component description
