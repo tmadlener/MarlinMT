@@ -7,7 +7,7 @@ namespace marlin {
   
   Component::Component( const std::string &type ) :
     _componentType(type),
-    _componentName(details::to_string<void*>(this)) {
+    _componentName(details::convert<void*>::to_string(this)) {
     _logger = Logging::createLogger( _componentType + "_" + _componentName ) ;
     _logger->setLevel( "MESSAGE" ) ;
   }
