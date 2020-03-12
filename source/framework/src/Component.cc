@@ -68,6 +68,12 @@ namespace marlin {
   
   //--------------------------------------------------------------------------
   
+  void Component::setLogLevel( const std::string &level ) {
+    _logger->setLevel( level ) ;
+  }
+  
+  //--------------------------------------------------------------------------
+  
   const Application &Component::application() const {
     if( nullptr == _application ) {
       MARLIN_THROW( "Application not set" ) ;

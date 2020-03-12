@@ -74,6 +74,14 @@ namespace marlin {
      */
     Application &application() ;
     
+    /**
+     *  @brief  Log a message with specific log level.
+     *  Returns a stream object in which you can log.
+     *  Usage:
+     *  @code{.cpp}
+     *  log<MESSAGE>() << "This is a message" << std::endl ;
+     *  @endcode
+     */
     template <class T>
     inline Logging::StreamType log() const {
       return _logger->log<T>() ;
@@ -90,6 +98,13 @@ namespace marlin {
     
     /// Shortcut for log<ERROR>()
     Logging::StreamType error() const ;
+    
+    /**
+     *  @brief  Set the verbosity level
+     * 
+     *  @param  level the verbosity level to set
+     */
+    void setLogLevel( const std::string &level ) ;
     
   protected:
     /**
