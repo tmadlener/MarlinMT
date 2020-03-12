@@ -546,6 +546,24 @@ namespace marlin {
       return keyRet ;
     }
     
+    //--------------------------------------------------------------------------
+    
+    inline bool is_number( const std::string &str ) {
+      return !str.empty() && std::find_if(str.begin(), str.end(), [](unsigned char c) { return !std::isdigit(c); }) == str.end() ;
+    }
+    
+    //--------------------------------------------------------------------------
+    
+    inline unsigned int nthreads( const std::string &str ) {
+      if( details::is_number(str) ) {
+        return details::convert<unsigned int>::from_string( str ) ;
+      }
+      if( str == "auto" ) {
+        return std::thread::hardware_concurrency() ;
+      }
+      MARLIN_THROW( "Invalid conversion to n threads" ) ;
+    }
+    
   }
 
 } // end namespace marlin
