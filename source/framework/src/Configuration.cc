@@ -136,7 +136,7 @@ namespace marlin {
   //--------------------------------------------------------------------------
   
   bool Configuration::hasSection( const std::string &n ) const {
-    return ( _sections.find( sn ) != _sections.end()) ;
+    return ( _sections.find( n ) != _sections.end()) ;
   }
   
   //--------------------------------------------------------------------------
