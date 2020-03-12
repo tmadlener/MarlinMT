@@ -95,7 +95,9 @@ namespace marlin {
   void Component::setup( Application *app ) {
     _application = app ;
     _logger = application().createLogger( _componentName ) ;
-    _logger->setLevel( _verbosity.get() ) ;
+    if( _verbosity.isSet() ) {
+      _logger->setLevel( _verbosity.get() ) ;
+    }
     message() << "----------------------------------------------------------" << std::endl ;
     message() << "Component type: '" << componentType() << "', name: '" << componentName() << "'" << std::endl ;
     message() << componentDescription() << std::endl ;
