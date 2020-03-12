@@ -104,7 +104,7 @@ namespace marlin {
      * 
      *  @param  level the verbosity level to set
      */
-    void setLogLevel( const std::string &level ) ;
+    void setVerbosity( const std::string &level ) ;
     
   protected:
     /**

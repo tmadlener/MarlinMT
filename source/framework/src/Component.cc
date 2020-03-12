@@ -68,7 +68,7 @@ namespace marlin {
   
   //--------------------------------------------------------------------------
   
-  void Component::setLogLevel( const std::string &level ) {
+  void Component::setVerbosity( const std::string &level ) {
     _logger->setLevel( level ) ;
   }
   
