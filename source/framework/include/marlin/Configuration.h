@@ -307,7 +307,8 @@ namespace marlin {
    *  @brief  ConfigReader base class
    *  Interface for reading configuration
    */
-  class ConfigReader {  
+  class ConfigReader {
+  public:
     /// Default destructor
     virtual ~ConfigReader() = default ;
     
