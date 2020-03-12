@@ -300,10 +300,7 @@ namespace marlin {
    *  @brief  ConfigReader base class
    *  Interface for reading configuration
    */
-  class ConfigReader {
-  public:
-    using ReplacementParametersMap = std::map<std::string,std::map<std::string,std::string>> ;
-    
+  class ConfigReader {  
     /// Default destructor
     virtual ~ConfigReader() = default ;
     
@@ -318,11 +315,10 @@ namespace marlin {
 
     /**
      *  @brief  Read the configuration and populate the configuration object.
-     *  Parameters can be used in the parsing process to substitute values on the fly
      *  
      *  @param  cfg the configuration object to populate
      */
-    virtual void read( Configuration &cfg, const ReplacementParametersMap &params = {} ) = 0 ;
+    virtual void read( Configuration &cfg ) = 0 ;
   };
   
   //--------------------------------------------------------------------------
@@ -383,9 +379,8 @@ namespace marlin {
      *  
      *  @param  str the reader descriptor (file name, database config, ...)
      *  @param  cfg the configuration object to populate
-     *  @param  params optional replacement parameters
      */
-    static void readConfig( const std::string &str, Configuration &cfg, const ConfigReader::ReplacementParametersMap &params = {} ) ;
+    static void readConfig( const std::string &str, Configuration &cfg ) ;
     
     /**
      *  @brief  Write the configuration using a ConfigWriter plugin.

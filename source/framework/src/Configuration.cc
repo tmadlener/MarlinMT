@@ -194,7 +194,7 @@ namespace marlin {
   
   //--------------------------------------------------------------------------
   
-  void ConfigHelper::readConfig( const std::string &str, Configuration &cfg, const ConfigReader::ReplacementParametersMap &params ) {
+  void ConfigHelper::readConfig( const std::string &str, Configuration &cfg ) {
     auto pluginInput = ConfigHelper::splitPluginInput( str ) ;
     // if no plugin guess it from the input string
     if( pluginInput.first.empty() ) {
@@ -211,7 +211,7 @@ namespace marlin {
       MARLIN_THROW( "No ConfigReader plugin found for type '" + pluginInput.first + "'" ) ;
     }
     reader->init( pluginInput.second ) ;
-    reader->read( cfg, params ) ;
+    reader->read( cfg ) ;
   }
   
   //--------------------------------------------------------------------------
