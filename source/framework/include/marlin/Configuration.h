@@ -269,6 +269,13 @@ namespace marlin {
      *  @brief  Get the list of subsections
      */
     std::vector<std::string> sections() const ;
+    
+    /**
+     *  @brief  Whether the section exists
+     * 
+     *  @param  n the section name
+     */
+    bool hasSection( const std::string &n ) const ;
     ///@}    
 
     /** @name Helper methods

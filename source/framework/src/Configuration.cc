@@ -135,6 +135,12 @@ namespace marlin {
   
   //--------------------------------------------------------------------------
   
+  bool Configuration::hasSection( const std::string &n ) const {
+    return ( _sections.find( sn ) != _sections.end()) ;
+  }
+  
+  //--------------------------------------------------------------------------
+  
   void Configuration::replaceConstants( std::string& str ) const {
     size_t pos = str.find("${") ;
     while( pos != std::string::npos ) {
