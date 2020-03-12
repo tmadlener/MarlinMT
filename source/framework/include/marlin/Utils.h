@@ -10,6 +10,7 @@
 #include <chrono>
 #include <vector>
 #include <algorithm>
+#include <thread>
 
 // -- marlin headers
 #include <marlin/Exceptions.h>
@@ -562,6 +563,12 @@ namespace marlin {
         return std::thread::hardware_concurrency() ;
       }
       MARLIN_THROW( "Invalid conversion to n threads" ) ;
+    }
+    
+    //--------------------------------------------------------------------------
+    
+    inline void to_lower( std::string &str ) {
+      std::transform( str.begin(), str.end(), str.begin(), [](unsigned char c) { return std::tolower( c ) ; } ) ;
     }
     
   }
