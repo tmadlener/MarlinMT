@@ -15,6 +15,8 @@
 
 namespace marlin {
   
+  class ConfigSection ;
+  
   /**
    *  @brief  EParameterType enumerator
    *  Enumerates parameter types supported by Marlin
@@ -272,6 +274,13 @@ namespace marlin {
      *  @brief  Unset all registered parameters
      */
     void unset() ;
+    
+    /**
+     *  @brief  Set the parameters from the configuration section
+     * 
+     *  @param  section the input parameter section
+     */
+    void setParameters( const ConfigSection &section ) ;
     
     iterator begin() ;
     const_iterator begin() const ;
