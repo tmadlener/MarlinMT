@@ -13,18 +13,13 @@
 namespace marlin {
 
   PluginManager::PluginManager() {
-    _pluginFactories.insert( PluginFactoryMap::value_type(PluginType::Processor, FactoryMap()) ) ;
-    _pluginFactories.insert( PluginFactoryMap::value_type(PluginType::GeometryPlugin, FactoryMap()) ) ;
-    _pluginFactories.insert( PluginFactoryMap::value_type(PluginType::DataSource, FactoryMap()) ) ;
-    _pluginFactories.insert( PluginFactoryMap::value_type(PluginType::GenericPlugin, FactoryMap()) ) ;
     _logger = Logging::createLogger( "PluginManager" ) ;
     _logger->setLevel<MESSAGE>() ;
   }
 
   //--------------------------------------------------------------------------
 
-  void PluginManager::registerPlugin( PluginType type, const std::string &name,
-    FactoryFunction factoryFunction, bool ignoreDuplicate ) {
+  void PluginManager::registerPlugin( const std::string &name, FactoryFunction factoryFunction, bool ignoreDuplicate ) {
     lock_type lock( _mutex ) ;
     auto typeIter = _pluginFactories.find( type ) ;
     auto factoryIter = typeIter->second.find( name ) ;

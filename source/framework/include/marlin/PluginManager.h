@@ -16,7 +16,9 @@
 // Helper macros to declare plugins
 // R. Ete: Impossible to make a function outside of main.
 // The workaround is to create a structure on-the-fly that make the function call in the constructor
-#define MARLIN_DECLARE_PLUGIN( Class, NameStr, Type ) \
+#define MARLIN_DECLARE_PLUGIN( Class ) MARLIN_DECLARE_PLUGIN_NAME( Class, #Class )
+
+#define MARLIN_DECLARE_PLUGIN_NAME( Class, NameStr ) \
   namespace marlin_plugins { \
     struct PluginDeclaration_##Class { \
       PluginDeclaration_##Class() { \
@@ -25,35 +27,38 @@
     }; \
     static PluginDeclaration_##Class __instance_##Class ; \
   }
-// geometry plugin declaration
-#define MARLIN_DECLARE_GEOPLUGIN_NAME( Class, NameStr ) MARLIN_DECLARE_PLUGIN( Class, NameStr, marlin::PluginType::GeometryPlugin )
-#define MARLIN_DECLARE_GEOPLUGIN( Class ) MARLIN_DECLARE_GEOPLUGIN_NAME( Class, #Class )
+  
+// #define MARLIN_DECLARE_PLUGIN_TYPENAME( Class, NameStr, Type ) \
+
+// // geometry plugin declaration
+// #define MARLIN_DECLARE_GEOPLUGIN_NAME( Class, NameStr ) MARLIN_DECLARE_PLUGIN_TYPENAME( Class, NameStr, marlin::PluginType::GeometryPlugin )
+// #define MARLIN_DECLARE_GEOPLUGIN( Class ) MARLIN_DECLARE_GEOPLUGIN_NAME( Class, #Class )
 // processor plugin declaration
 #define MARLIN_DECLARE_PROCESSOR( Class ) namespace { \
   static const auto __type__ = Class().type() ; \
-  MARLIN_DECLARE_PLUGIN( Class, __type__, marlin::PluginType::Processor ) \
+  MARLIN_DECLARE_PLUGIN_TYPENAME( Class, __type__ ) \
 }
 
-// data source plugin declaration
-#define MARLIN_DECLARE_DATASOURCE_NAME( Class, NameStr ) MARLIN_DECLARE_PLUGIN( Class, NameStr, marlin::PluginType::DataSource )
-#define MARLIN_DECLARE_DATASOURCE( Class ) MARLIN_DECLARE_DATASOURCE_NAME( Class, #Class )
-
-// generic plugin declaration
-#define MARLIN_DECLARE_GENERIC( Class, NameStr ) MARLIN_DECLARE_PLUGIN( Class, NameStr, marlin::PluginType::GenericPlugin )
+// // data source plugin declaration
+// #define MARLIN_DECLARE_DATASOURCE_NAME( Class, NameStr ) MARLIN_DECLARE_PLUGIN_TYPENAME( Class, NameStr, marlin::PluginType::DataSource )
+// #define MARLIN_DECLARE_DATASOURCE( Class ) MARLIN_DECLARE_DATASOURCE_NAME( Class, #Class )
+// 
+// // generic plugin declaration
+// #define MARLIN_DECLARE_GENERIC( Class, NameStr ) MARLIN_DECLARE_PLUGIN_TYPENAME( Class, NameStr, marlin::PluginType::GenericPlugin )
 
 namespace marlin {
 
-  /**
-   *  @brief  PluginType enumerator
-   *  Enumerate only possible Marlin plugin types.
-   *  Might be extended with framework development.
-   */
-  enum class PluginType : int {
-    Processor,
-    GeometryPlugin,
-    DataSource,
-    GenericPlugin
-  } ;
+  // /**
+  //  *  @brief  PluginType enumerator
+  //  *  Enumerate only possible Marlin plugin types.
+  //  *  Might be extended with framework development.
+  //  */
+  // enum class PluginType : int {
+  //   Processor,
+  //   GeometryPlugin,
+  //   DataSource,
+  //   GenericPlugin
+  // } ;
 
   //--------------------------------------------------------------------------
   //--------------------------------------------------------------------------
@@ -78,8 +83,11 @@ namespace marlin {
       FactoryFunction       _factory {} ;
     };
     
-    typedef std::map<std::string, FactoryData>          FactoryMap ;
-    typedef std::map<PluginType, FactoryMap>            PluginFactoryMap ;
+    // typedef std::map<std::string, FactoryData>          FactoryMap ;
+    // typedef std::map<PluginType, FactoryMap>            PluginFactoryMap ;
+    typedef std::map<std::string, FactoryData>          PluginFactoryMap ;
+    // typedef std::map<PluginType, FactoryMap>             ;
+    
     typedef std::vector<void*>                          LibraryList ;
     typedef Logging::Logger                             Logger ;
     typedef std::recursive_mutex                        mutex_type ;
@@ -111,24 +119,21 @@ namespace marlin {
      *  thrown in case a duplicate is found in the registry. In this
      *  case, the registry is not modified.
      *
-     *  @param  type the plugin type
      *  @param  name the plugin name
      *  @param  ignoreDuplicate whether to avoid exception throw in case of duplicate entry
      */
     template <typename T>
-    void registerPlugin( PluginType type, const std::string &name, bool ignoreDuplicate = true ) ;
+    void registerPlugin( const std::string &name, bool ignoreDuplicate = true ) ;
 
     /**
      *  @brief  Register a new plugin to the manager.
      *  See overloaded function description for more details
      *
-     *  @param  type the plugin type
      *  @param  name the plugin name
      *  @param  factoryFunction the factory function responsible for the plugin creation
      *  @param  ignoreDuplicate whether to avoid exception throw in case of duplicate entry
      */
-    void registerPlugin( PluginType type, const std::string &name,
-      FactoryFunction factoryFunction, bool ignoreDuplicate = true ) ;
+    void registerPlugin( const std::string &name, FactoryFunction factoryFunction, bool ignoreDuplicate = true ) ;
 
     /**
      *  @brief  Load shared libraries to populate the list of plugins
@@ -138,34 +143,22 @@ namespace marlin {
     bool loadLibraries( const std::string &envvar = "MARLIN_DLL" ) ;
 
     /**
-     *  @brief  Get all registered plugin name for the given type
-     *
-     *  @param  type the plugin type
+     *  @brief  Get all registered plugin name
      */
-    std::vector<std::string> pluginNames( PluginType type ) const ;
+    std::vector<std::string> pluginNames() const ;
 
     /**
-     *  @brief  Whether the plugin of given type and name is registered
+     *  @brief  Whether the plugin with of a given name is registered
      *
-     *  @param  type the plugin type to check
      *  @param  name the plugin name to check
      */
-    bool pluginRegistered( PluginType type, const std::string &name ) const ;
-
-    /**
-     *  @brief  Create a new plugin instance.
-     *  A factory function must have been registered before hand.
-     *  The template parameter T is the final plugin type requested
-     *  by the caller.
-     *
-     *  @param  type the plugin type
-     *  @param  name the plugin name
-     */
-    template <typename T>
-    std::shared_ptr<T> create( PluginType type, const std::string &name ) const ;
+    bool pluginRegistered( const std::string &name ) const ;
     
     /**
-     *  @brief  Create a new plugin instance. Shortcut for generic plugins
+    *  @brief  Create a new plugin instance.
+    *  A factory function must have been registered before hand.
+    *  The template parameter T is the final plugin type requested
+    *  by the caller.
      *
      *  @param  name the plugin name
      */
@@ -181,14 +174,6 @@ namespace marlin {
      *  @brief  Get the plugin manager logger
      */
     Logger logger() const ;
-
-  private:
-    /**
-     *  @brief  Convert plugin type to string
-     *
-     *  @param  type plugin type from enumerator
-     */
-    static std::string pluginTypeToString( PluginType type ) ;
 
   private:
     /// The map of plugin factories
