@@ -2,7 +2,7 @@
 #define MARLIN_DATASOURCEPLUGIN_h 1
 
 // -- marlin headers
-#include <marlin/Parameter.h>
+#include <marlin/Component.h>
 #include <marlin/Logging.h>
 
 // -- std headers
@@ -21,11 +21,10 @@ namespace marlin {
    *  Responsible for reading/getting LCEvent and LCRunHeader
    *  in the framework for further processing
    */
-  class DataSourcePlugin : public Parametrized {
+  class DataSourcePlugin : public Component {
   public:
     using EventFunction = std::function<void(std::shared_ptr<EventStore>)> ;
     using RunHeaderFunction = std::function<void(std::shared_ptr<RunHeader>)> ;
-    using Logger = Logging::Logger ;
 
   public:
     virtual ~DataSourcePlugin() = default ;
@@ -38,13 +37,6 @@ namespace marlin {
     DataSourcePlugin( const std::string &dstype ) ;
 
     /**
-     *  @brief  Initialize the plugin using application parameters
-     *
-     *  @param  app the application in which the plugin is running
-     */
-    void init( const Application *app ) ;
-
-    /**
      *  @brief  Get the data source type
      */
     const std::string &type() const ;
@@ -53,11 +45,6 @@ namespace marlin {
      *  @brief  Get the data source description
      */
     const std::string &description() const ;
-
-    /**
-     *  @brief  Initialize the plugin
-     */
-    virtual void init() = 0 ;
 
     /**
      *  @brief  Read one record from the input stream
@@ -88,11 +75,6 @@ namespace marlin {
      */
     void onRunHeaderRead( RunHeaderFunction func ) ;
 
-    /**
-     *  @brief  Get the plugin logger
-     */
-    Logger logger() const ;
-
   protected:
     /**
      *  @brief  Must be called by daughter classes in readStream()
@@ -115,10 +97,6 @@ namespace marlin {
     std::string              _description {"No description"} ;
 
   private:
-    ///< The data source type
-    const std::string        _type ;
-    ///< The plugin logger
-    Logger                   _logger {nullptr} ;
     ///< The callback function on event read
     EventFunction            _onEventRead {nullptr} ;
     ///< The callback function on run header read

@@ -8,27 +8,14 @@
 namespace marlin {
 
   DataSourcePlugin::DataSourcePlugin( const std::string &dstype ) :
-    _type(dstype) {
-    _logger = Logging::createLogger( "Data source '" + _type + "'" ) ;
-  }
-
-  //--------------------------------------------------------------------------
-
-  void DataSourcePlugin::init( const Application *app ) {
-    _logger = app->createLogger( "Data source '" + _type + "'" ) ;
-    setParameters( app->dataSourceParameters() ) ;
-    logger()->log<MESSAGE>() << "----------------------------------------------------------" << std::endl ;
-    logger()->log<MESSAGE>() << "Data source" << std::endl ;
-    logger()->log<MESSAGE>() << "  - type: " << type() << std::endl ;
-    logger()->log<MESSAGE>() << "  - description: " << description() << std::endl ;
-    init() ;
-    logger()->log<MESSAGE>() << "----------------------------------------------------------" << std::endl ;
+    Component(dstype) {
+    /* nop */
   }
 
   //--------------------------------------------------------------------------
 
   const std::string &DataSourcePlugin::type() const {
-    return _type ;
+    return componentName() ;
   }
 
   //--------------------------------------------------------------------------
@@ -41,12 +28,6 @@ namespace marlin {
 
   void DataSourcePlugin::readAll() {
     while( readOne() ) ;
-  }
-
-  //--------------------------------------------------------------------------
-
-  DataSourcePlugin::Logger DataSourcePlugin::logger() const {
-    return _logger ;
   }
 
   //--------------------------------------------------------------------------
