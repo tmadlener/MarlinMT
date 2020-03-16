@@ -2,9 +2,11 @@
 
 // -- marlin headers
 #include <marlin/MarlinBookConfig.h>
+#include <marlin/Component.h>
 #include <marlin/Logging.h>
 
 // -- std includes
+#include <unistd.h>
 #include <set>
 
 namespace marlin {
@@ -16,16 +18,18 @@ namespace marlin {
   /**
    *  @brief  BookStoreManager class
    */
-  class BookStoreManager {
-    struct ParameterNames {
-      static constexpr char OutputFile[] = "OutputFile" ;
-      static constexpr char DefaultMemoryLayout[] = "DefaultMemoryLayout" ;
-      static constexpr char StoreByDefault[] = "StoreByDefault" ;
-    };
+  class BookStoreManager : public Component {
+    // struct ParameterNames {
+    //   static constexpr char OutputFile[] = "OutputFile" ;
+    //   static constexpr char DefaultMemoryLayout[] = "DefaultMemoryLayout" ;
+    //   static constexpr char StoreByDefault[] = "StoreByDefault" ;
+    // };
+  // public:
+  //   using Logger = Logging::Logger;   
   public:
-    using Logger = Logging::Logger;   
-  public:
-    BookStoreManager() = default;
+    /// Constructor
+    BookStoreManager() ;
+    
     BookStoreManager( const BookStoreManager & ) = delete ;
     BookStoreManager &operator=( const BookStoreManager & ) = delete ;
     BookStoreManager( BookStoreManager && ) = delete ;
@@ -37,11 +41,8 @@ namespace marlin {
      */
     void writeToDisk() const ;
     
-    /// Whether the book store has been initialized
-    [[nodiscard]] bool isInitialized() const ;
-    
     /// Initialize the book store manager
-    void init( const Application *app ) ;
+    void initComponent() override ;
     
     /**
      *  @brief  Book  a histogram 1D, float type
@@ -108,20 +109,17 @@ namespace marlin {
 
     
   private:
-
-    /// The application in which the geometry manager has been initialized
-    const Application                   *_application {nullptr} ;
     /// The book store
     book::BookStore                      _bookStore {true} ;
-    /// list of entry keys for Entries which should be stored at end of lifetime
+    /// List of entry keys for Entries which should be stored at end of lifetime
     std::set<book::EntryKey>             _entriesToWrite {} ;
-    /// The logger instance
-    Logger                               _logger {nullptr} ;
-    /// path to file to store objects
-    std::filesystem::path                _storeFile{""};
+    /// Output file name to store objects
+    StringParameter                      _outputFile {*this, "OutputFile", "The output file name for storage", "MarlinMT_"+details::convert<int>::to_string(::getpid())+".root"} ;
+    /// Output file name to store objects
+    StringParameter                      _defaultMemLayout {*this, "DefaultMemoryLayout", "The memory layout for objects", "Default"} ;
     /// default flag, used if flag == BookFlags::Default. 
     /// Default is shared, store. Change is steering file with: store::DefaultMemoryLayout and store::StoreByDefault.
-    BookFlag_t                           _defaultFlag{} ;
+    BookFlag_t                           _defaultFlag { 0 } ;
   };
 
   

@@ -41,84 +41,48 @@ namespace marlin {
   INSTANCIATIONS_HIST(Hist3I);
 
   //--------------------------------------------------------------------------
-    
+  
+  BookStoreManager::BookStoreManager() :
+    Component("BookStoreManager") {
+    setComponentName("BookStore") ;
+  }
+  
+  //--------------------------------------------------------------------------
   
   void BookStoreManager::writeToDisk() const {
-    if (_storeFile == "") {
-      if (_entriesToWrite.empty())   {
-        _logger->log<MESSAGE>() << "No Output file set!\n";
-      } else {
-        _logger->log<WARNING>() << "No Output file set, but " 
-          << _entriesToWrite.size() << " entries to write!\n";
-      }
-    } else {
-      if ( _entriesToWrite.empty() ) {
-        _logger->log<MESSAGE>() << "No Objects listed for writing to disk."
-          " No output file generated!\n";
-      } else {
-      book::StoreWriter writer ( _storeFile ) ;
-        _bookStore.storeList(
-          writer,
-          _entriesToWrite.begin(), 
-          _entriesToWrite.end());
-      }
-    }
+    book::StoreWriter writer ( _outputFile.get() ) ;
+    _bookStore.storeList( writer, _entriesToWrite.begin(), _entriesToWrite.end());
   }
 
   //--------------------------------------------------------------------------
   
-
-  void BookStoreManager::init( const Application *app ) {
-    if( isInitialized() ) {
-      MARLIN_THROW( "BookStoreManager::init: Already initialized !" ) ;
+  void BookStoreManager::initComponent() {
+    auto &config = application().configuration() ;
+    if( config.hasSection("bookstore") ) {
+      const auto &section = config.section("bookstore") ;
+      setParameters( section ) ;
     }
-    _application = app ;
-    _logger = _application->createLogger( "BookStoreManager" ) ;
-
-    std::shared_ptr<StringParameters> paras =  app->bookStoreParameters();
-    if (!paras) {
-      _logger->log<WARNING>() 
-        << "no <store> node exist on top level!\n"
-        << "\tNo Output file set!\n"
-        << "\tUse Default flags for Booking!\n";
-      _defaultFlag = BookFlags::MultiShared | BookFlags::Store ;  
-    } else {
-      _storeFile =
-        paras->getValue<std::string>(ParameterNames::OutputFile, "");
-
-      BookFlag_t memoryLayout(0);
-      std::string str = 
-        paras->getValue<std::string>(
-          ParameterNames::DefaultMemoryLayout, 
-          "Default");
-      if ( app->getConcurrency() == 1 ) {
-        _logger->log<MESSAGE>() << "No concurrency, use Single memory layout!\n";
-      } else if ( str == "Share" ) {
-        memoryLayout = BookFlags::MultiShared ;
-      } else if ( str == "Copy" ) {
-        memoryLayout = BookFlags::MultiCopy ;
-      } else if ( str == "Default") {
-        memoryLayout = BookFlags::MultiShared ;
-      } else {
-        memoryLayout = BookFlags::MultiShared ;
-        _logger->log<WARNING>() << "not recognized input option: " 
-          << str << '\n';
+    // possible options for flags
+    static const std::map<std::string, BookFlag_t> flags {
+      {"share", BookFlags::MultiShared},
+      {"copy", BookFlags::MultiCopy},
+      {"default", BookFlags::MultiShared},
+    } ;
+    BookFlag_t memoryLayout( 0 ) ;
+    std::string memLayoutStr = _defaultMemLayout.get() ;
+    details::to_lower( memLayoutStr ) ;
+    // if one thread only to layout is also the same: single
+    if( 1 == application().cmdLineParseResult()._nthreads ) {
+      memoryLayout = BookFlags::Single ;
+    }
+    else {
+      auto iter = flags.find( memLayoutStr ) ;
+      if( flags.end() == iter ) {
+        MARLIN_THROW( "Unknown memory layout flag '" + _defaultMemLayout.get() + "'" ) ;
       }
-      _defaultFlag = BookFlags::Store | memoryLayout ;
+      memoryLayout = iter->second ;
     }
-
-    if (_storeFile == "") {
-      _storeFile = "MarlinMT_" + std::to_string(getpid()) + ".root"; 
-      _logger->log<WARNING>()
-        << "no output file for store defined, output will written in: "
-        << _storeFile.string() << "\n";
-    }
-  }
-  
-  //--------------------------------------------------------------------------
-  
-  bool BookStoreManager::isInitialized() const {
-    return ( nullptr != _application ) ;
+    _defaultFlag = BookFlags::Store | memoryLayout ;
   }
 
   //--------------------------------------------------------------------------
@@ -142,7 +106,8 @@ namespace marlin {
     bool store = usedFlag.contains(book::Flags::Book::Store);
 
     BookFlag_t flagsToPass = usedFlag & book::Masks::Book::MemoryLayout ;
-    if ( _application->getConcurrency() == 1 ) {
+    auto nthreads = application().cmdLineParseResult()._nthreads ;
+    if ( 1 == nthreads ) {
       flagsToPass = book::Flags::Book::Single;
     }
 
@@ -160,17 +125,12 @@ namespace marlin {
 
     book::Handle<book::Entry<HistT>> entry;
 
-    if( flagsToPass.contains(book::Flags::Book::MultiCopy)) 
-    {
-      entry =  _bookStore.book( path, name, data.multiCopy(_application->getConcurrency()) ) ;
-    } 
-    else if ( flagsToPass.contains(book::Flags::Book::MultiShared)) 
-    {
-      entry =  _bookStore.book( path, name, data.multiShared(_application->getConcurrency()) ) ;
-    } 
-    else if ( flagsToPass.contains(book::Flags::Book::Single)) 
-    {
-      if ( _application->getConcurrency() != 1) {
+    if( flagsToPass.contains(book::Flags::Book::MultiCopy)) {
+      entry =  _bookStore.book( path, name, data.multiCopy(nthreads) ) ;
+    } else if ( flagsToPass.contains(book::Flags::Book::MultiShared)) {
+      entry =  _bookStore.book( path, name, data.multiShared() ) ;
+    } else if ( flagsToPass.contains(book::Flags::Book::Single)) {
+      if ( nthreads != 1) {
         _logger->log<ERROR>() << "Single Memory layout can't be used"
           " with concurrency! \n"
           "\tuse Marlin for workflows without concurrency";
