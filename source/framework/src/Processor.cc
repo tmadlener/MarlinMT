@@ -11,14 +11,18 @@ namespace marlin {
     _typeName( typeName ) ,
     _parameters(0) ,
     _logLevelName("") {
-    // verbosity default parameter
-    registerOptionalParameter( "Verbosity" ,
-             "verbosity level of this processor (\"DEBUG0-4,MESSAGE0-4,WARNING0-4,ERROR0-4,SILENT\")"  ,
-             _logLevelName ,
-             std::string("") ) ;
-    std::stringstream ss ; ss << _typeName <<  "_" << (void*)this ;
-    _logger = Logging::createLogger( ss.str() ) ;
-    _logger->setLevel( "MESSAGE" );
+    // // verbosity default parameter
+    // registerOptionalParameter( "Verbosity" ,
+    //          "verbosity level of this processor (\"DEBUG0-4,MESSAGE0-4,WARNING0-4,ERROR0-4,SILENT\")"  ,
+    //          _logLevelName ,
+    //          std::string("") ) ;
+    // std::stringstream ss ; ss << _typeName <<  "_" << (void*)this ;
+    // _logger = Logging::createLogger( ss.str() ) ;
+    // _logger->setLevel( "MESSAGE" );
+  }
+  
+  void Processor::setDescription( const std::string &description ) {
+    setComponentDescription( description ) ;
   }
 
   //--------------------------------------------------------------------------
