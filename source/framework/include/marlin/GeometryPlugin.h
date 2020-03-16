@@ -80,8 +80,6 @@ namespace marlin {
     void print() const ;
 
   protected:
-    /// The geometry plugin description
-    std::string         _description {"No description"} ;
     /// Whether to dump the geometry on creation
     BoolParameter       _dumpGeometry {*this, "DumpGeometry", "Whether to dump the geometry on creation", false} ;
   };
@@ -90,7 +88,7 @@ namespace marlin {
   //--------------------------------------------------------------------------
 
   inline const std::string &GeometryPlugin::description() const {
-    return _description ;
+    return componentDescription() ;
   }
 
   //--------------------------------------------------------------------------

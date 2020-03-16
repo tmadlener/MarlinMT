@@ -6,33 +6,31 @@
 
 namespace marlin {
 
-  GeometryManager::GeometryManager() {
-    _logger = Logging::createLogger( "GeometryManager" ) ;
+  GeometryManager::GeometryManager() :
+    Component( "GeometryManager" ) {
+    setComponentName( "Geometry" ) ;
   }
 
   //--------------------------------------------------------------------------
 
-  void GeometryManager::init( const Application *application ) {
-    if ( isInitialized() ) {
-      throw Exception( "GeometryManager::init: already initialized !" ) ;
+  void GeometryManager::initComponent() {
+    auto &config = application().configuration() ;
+    if( config.hasSection("geometry") ) {
+      const auto &section = config.section("geometry") ;
+      setParameters( section ) ;
     }
-    _application = application ;
-    _logger = app().createLogger( "GeometryManager" ) ;
+    auto geomType = _geometryType.get() ;
+    message() << "Loading geometry plugin: " << geomType << std::endl ;
     auto &mgr = PluginManager::instance() ;
-    auto geometryParameters = app().geometryParameters() ;
-    if ( nullptr == geometryParameters ) {
-      _logger->log<WARNING>() << "No geometry section found. Creating empty geometry" << std::endl ;
-      _plugin = mgr.create<GeometryPlugin>( PluginType::GeometryPlugin, "EmptyGeometry" ) ;
+    _plugin = mgr.create<GeometryPlugin>( geomType ) ;
+    if ( nullptr == _plugin ) {
+      MARLIN_THROW( "Couldn't find geometry plugin '" + geomType + "'" ) ;
     }
-    else {
-      auto geometryType = geometryParameters->getValue<std::string>( "GeometryType" ) ;
-      _plugin = mgr.create<GeometryPlugin>( PluginType::GeometryPlugin, geometryType ) ;
-      if ( nullptr == _plugin ) {
-        throw Exception( "GeometryManager::init: Couldn't find geometry plugin '" + geometryType + "'..." ) ;
-      }
-      _plugin->setParameters( geometryParameters ) ;
+    if( config.hasSection("geometry") ) {
+      const auto &section = config.section("geometry") ;
+      _plugin->setParameters( section ) ;
     }
-    _plugin->init( _application ) ;
+    _plugin->setup( &application() ) ;
     _plugin->print() ;
   }
 
@@ -40,7 +38,7 @@ namespace marlin {
 
   std::type_index GeometryManager::typeIndex() const {
     if ( nullptr == _plugin ) {
-      throw Exception( "GeometryManager::typeIndex: geometry not initialized !" ) ;
+      MARLIN_THROW( "Geometry not initialized !" ) ;
     }
     return _plugin->typeIndex() ;
   }
@@ -52,22 +50,6 @@ namespace marlin {
       _plugin->destroy() ;
       _plugin = nullptr ;
     }
-    _application = nullptr ;
-  }
-
-  //--------------------------------------------------------------------------
-
-  bool GeometryManager::isInitialized() const {
-    return ( nullptr != _application && nullptr != _plugin ) ;
-  }
-
-  //--------------------------------------------------------------------------
-
-  const Application &GeometryManager::app() const {
-    if ( nullptr == _application ) {
-      throw Exception( "GeometryManager::app: not initilialized !" ) ;
-    }
-    return *_application ;
   }
 
 } // namespace marlin

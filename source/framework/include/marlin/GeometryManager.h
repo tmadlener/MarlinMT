@@ -7,6 +7,7 @@
 // -- marlin headers
 #include <marlin/Logging.h>
 #include <marlin/Exceptions.h>
+#include <marlin/Component.h>
 #include <marlin/GeometryPlugin.h>
 
 namespace marlin {
@@ -18,10 +19,7 @@ namespace marlin {
    *  Handle a user plugin in charge of loading the geometry
    *  in the framework and providing access to it.
    */
-  class GeometryManager {
-  public:
-    using Logger = Logging::Logger ;
-
+  class GeometryManager : public Component {
   public:
     GeometryManager(const GeometryManager &) = delete ;
     GeometryManager& operator=(const GeometryManager &) = delete ;
@@ -32,13 +30,8 @@ namespace marlin {
      */
     GeometryManager() ;
 
-    /**
-     *  @brief  Initialize the geometry manager.
-     *  Load the geometry plugin service and create the geometry
-     *
-     *  @param  app the application from which to get settings
-     */
-    void init( const Application *app ) ;
+    /// Initialize geometry manager
+    void initComponent() override ;
 
     /**
      *  @brief  Get the underlying geometry handle
@@ -64,24 +57,11 @@ namespace marlin {
      */
     void clear() ;
 
-    /**
-     *  @brief  Whether the geometry has been initialized
-     */
-    bool isInitialized() const ;
-
-    /**
-     *  @brief  Get the application in which the manager is running
-     *  Valid only after initialization
-     */
-    const Application &app() const ;
-
   private:
-    /// The geometry plugin created on init()
+    /// The geometry plugin created on initialization
     std::shared_ptr<GeometryPlugin>      _plugin {nullptr} ;
-    /// The application in which the geometry manager has been initialized
-    const Application                   *_application {nullptr} ;
-    /// The logger instance
-    Logger                               _logger {nullptr} ;
+    /// The geometry type, read as <geometry type="DD4hepGeometry">
+    StringParameter                      _geometryType {*this, "GeometryType", "The geometry plugin type", "EmptyGeometry"} ;
   };
 
   //--------------------------------------------------------------------------
