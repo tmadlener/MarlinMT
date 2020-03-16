@@ -111,16 +111,15 @@ namespace marlin {
      */
     bool isInitialized() const ;
     
+    /// Setup the component. Called by the application before initialization
+    void setup( Application *app ) ;
+    
   protected:
     /**
      *  @brief  Get the component description
      */
     void setComponentDescription( const std::string &description ) ;
-    
-  private:
-    /// Setup the component. Called by the application before initialization
-    void setup( Application *app ) ;
-    
+        
   protected:
     /// The component type
     std::string              _componentType {} ;
