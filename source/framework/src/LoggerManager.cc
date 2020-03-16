@@ -15,7 +15,7 @@ namespace marlin {
   //--------------------------------------------------------------------------
 
   void LoggerManager::initComponent() {
-    auto config = appplication().configuration() ;
+    auto config = application().configuration() ;
     if( config.hasSection("logging") ) {
       setParameters( config.section("logging") ) ;
     }
@@ -27,9 +27,10 @@ namespace marlin {
       sinks.push_back( streamlog::logstream::console<Logging::mutex_type>() ) ;
     }
     if ( not _logfile.get().empty() ) {
-      sinks.push_back( streamlog::logstream::simpleFile<Logging::mutex_type>( _logfile.get() ) ) ;
+      auto logfilename = _logfile.get() ;
+      sinks.push_back( streamlog::logstream::simpleFile<Logging::mutex_type>( logfilename ) ) ;
     }
-    setLogLevel( _verbosity.get() ) ;
+    setVerbosity( _verbosity.get() ) ;
     mainLogger()->setName( application().programName() ) ;
     mainLogger()->setSinks( sinks ) ;
     streamlog::logstream::global().setName( application().programName() ) ;
