@@ -43,7 +43,8 @@ install( TARGETS Core EXPORT Marlin LIBRARY )
 # Dependencies include dirs as system one to avoid unnecessary warnings
 target_include_directories( 
   Core SYSTEM PUBLIC 
-  $<BUILD_INTERFACE:${streamlog_INCLUDE_DIRS}> $<BUILD_INTERFACE:${TinyXML_INCLUDE_DIR}>
+  $<BUILD_INTERFACE:${streamlog_INCLUDE_DIRS}> 
+  $<BUILD_INTERFACE:${MARLIN_3RDPARTY}/tclap/include>  # 3rd party tclap includes
 )
 target_include_directories( 
   Core BEFORE PUBLIC 
@@ -55,7 +56,6 @@ target_link_libraries(
   Threads::Threads
   Marlin::Book
   ${streamlog_LIBRARIES} 
-  ${TinyXML_LIBRARY}
   ${CMAKE_DL_LIBS} 
 )
 set_target_properties( 
@@ -84,8 +84,12 @@ set_target_properties(
     VERSION ${${PROJECT_NAME}_VERSION}
     CXX_STANDARD ${MARLIN_CXX_STANDARD}
 )
+target_include_directories(
+  CorePlugins SYSTEM PUBLIC 
+  $<BUILD_INTERFACE:${TinyXML_INCLUDE_DIR}>
+)
 target_link_libraries( 
-  CorePlugins PUBLIC Marlin::Core
+  CorePlugins PUBLIC Marlin::Core ${TinyXML_LIBRARY}
 )
 
 # Add MarlinCorePlugins library to list of MARLIN_DLL libraries
