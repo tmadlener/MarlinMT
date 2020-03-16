@@ -5,10 +5,10 @@
 #include <string>
 
 // -- high level exception macros
-#define MARLIN_THROW( message ) throw marlin::Exception( __LINE__, __FUNCTION__, __FILE__, message )
-#define MARLIN_THROW_T( ExceptionType, message ) throw ExceptionType( __LINE__, __FUNCTION__, __FILE__, message )
-#define MARLIN_RETHROW( orig, message ) throw marlin::Exception( orig, __LINE__, __FUNCTION__, __FILE__, message )
-#define MARLIN_RETHROW_T( ExceptionType, orig, message ) throw ExceptionType( orig, __LINE__, __FUNCTION__, __FILE__, message )
+#define MARLIN_THROW( message ) throw marlin::Exception( __LINE__, __PRETTY_FUNCTION__, __FILE__, message )
+#define MARLIN_THROW_T( ExceptionType, message ) throw ExceptionType( __LINE__, __PRETTY_FUNCTION__, __FILE__, message )
+#define MARLIN_RETHROW( orig, message ) throw marlin::Exception( orig, __LINE__, __PRETTY_FUNCTION__, __FILE__, message )
+#define MARLIN_RETHROW_T( ExceptionType, orig, message ) throw ExceptionType( orig, __LINE__, __PRETTY_FUNCTION__, __FILE__, message )
 
 // -- specific marlin exception
 #define MARLIN_SKIP_EVENT( proc ) MARLIN_THROW_T( marlin::SkipEventException, proc->name() )
