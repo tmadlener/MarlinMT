@@ -3,6 +3,8 @@
 # @author Remi Ete, DESY
 #################################
 
+set( MARLIN_3RDPARTY ${CMAKE_CURRENT_SOURCE_DIR}/3rdParty )
+
 # MarlinBook and framework
 add_subdirectory( book )
 add_subdirectory( framework )
