@@ -5,71 +5,50 @@
 
 namespace marlin {
 
-  LoggerManager::LoggerManager() {
-    _mainLogger = Logging::createLogger( "main" ) ;
-    _mainLogger->setLevel<MESSAGE>() ;
+  LoggerManager::LoggerManager() : 
+    Component("LoggerManager") {
+    setComponentDescription( "The logger manager manages all the logging facility whithin the application" ) ;
+    // temporary name before initialization
+    mainLogger()->setName( "main" ) ;
   }
 
   //--------------------------------------------------------------------------
 
-  void LoggerManager::init( const Application *app ) {
-    if ( _initialized ) {
-      throw Exception( "LoggerManager::init: already initialized!" ) ;
+  void LoggerManager::initComponent() {
+    auto config = appplication().configuration() ;
+    if( config.hasSection("logging") ) {
+      setParameters( config.section("logging") ) ;
     }
-    auto globals = app->globalParameters() ;
-    auto verbosityLevel = globals->getValue<std::string>( "Verbosity" ) ;
-    auto logFileName = globals->getValue<std::string>( "LogFileName", "" ) ;
-    auto coloredConsole = globals->getValue<bool>( "ColoredConsole", false ) ;
     streamlog::logsink_list sinks {} ;
-    if ( coloredConsole ) {
+    if ( _coloredConsole.get() ) {
       sinks.push_back( streamlog::logstream::coloredConsole<Logging::mutex_type>() ) ;
     }
     else {
       sinks.push_back( streamlog::logstream::console<Logging::mutex_type>() ) ;
     }
-    if ( not logFileName.empty() ) {
-      sinks.push_back( streamlog::logstream::simpleFile<Logging::mutex_type>( logFileName ) ) ;
+    if ( not _logfile.get().empty() ) {
+      sinks.push_back( streamlog::logstream::simpleFile<Logging::mutex_type>( _logfile.get() ) ) ;
     }
-    // configure both main and global logger
-    if ( not verbosityLevel.empty() ) {
-      setLevel( verbosityLevel ) ;
-    }
-    mainLogger()->setName( app->program() ) ;
+    setLogLevel( _verbosity.get() ) ;
+    mainLogger()->setName( application().programName() ) ;
     mainLogger()->setSinks( sinks ) ;
-    streamlog::logstream::global().setName( app->program() ) ;
+    streamlog::logstream::global().setName( application().programName() ) ;
     streamlog::logstream::global().setSinks( sinks ) ;
-    _initialized = true ;
   }
 
   //--------------------------------------------------------------------------
 
   LoggerManager::Logger LoggerManager::mainLogger() const {
-    return _mainLogger ;
+    return _logger ;
   }
 
   //--------------------------------------------------------------------------
 
   LoggerManager::Logger LoggerManager::createLogger( const std::string &name ) const {
-    if ( not isInitialized() ) {
-      throw Exception( "LoggerManager::createLogger: not yet initialized!" ) ;
-    }
     auto logger = Logging::createLogger( name ) ;
     logger->setSinks( mainLogger()->sinks() ) ;
     logger->setLevel( mainLogger()->levelName() ) ;
     return logger ;
-  }
-
-  //--------------------------------------------------------------------------
-
-  bool LoggerManager::isInitialized() const {
-    return _initialized ;
-  }
-
-  //--------------------------------------------------------------------------
-
-  void LoggerManager::setLevel( const std::string &level ) {
-    mainLogger()->setLevel( level ) ;
-    streamlog::logstream::global().setLevel( level ) ;
   }
 
 } // namespace marlin

@@ -5,8 +5,9 @@
 #include <string>
 
 // -- marlin headers
-#include "marlin/Exceptions.h"
-#include "marlin/Logging.h"
+#include <marlin/Exceptions.h>
+#include <marlin/Logging.h>
+#include <marlin/Component.h>
 
 namespace marlin {
 
@@ -17,7 +18,7 @@ namespace marlin {
    *  Responsible for configuring logger for a given application.
    *  Can possibly configure the global logger instance.
    */
-  class LoggerManager {
+  class LoggerManager : public Component {
   public:
     using Logger = Logging::Logger ;
 
@@ -32,12 +33,9 @@ namespace marlin {
     LoggerManager() ;
 
     /**
-     *  @brief  Initialize the manager and the manager
-     *  using the application settings
-     *
-     *  @param app the application
+     *  @brief  Initialize the logger manager
      */
-    void init( const Application *app ) ;
+    void initComponent() override ;
 
     /**
      *  @brief  Get the main logger instance (not the global one)
@@ -52,23 +50,13 @@ namespace marlin {
      */
     Logger createLogger( const std::string &name ) const ;
     
-    /**
-     *  @brief  Set the verbosity level of both the main and global loggers
-     * 
-     *  @param  level the verbosity level to set
-     */
-    void setLevel( const std::string &level ) ;
-
-    /**
-     *  @brief  Whether the logger manager has been initialized
-     */
-    bool isInitialized() const ;
-
   private:
-    /// The main logger instance
-    Logger             _mainLogger {nullptr} ;
-    /// Whether the manager has been initialized
-    bool               _initialized {false} ;
+    /// The main verbosity level
+    StringParameter         _verbosity {*this, "Verbosity", "The main verbosity level", "MESSAGE"} ;
+    /// The name of the log file (optional)
+    StringParameter         _logfile {*this, "Logfile", "The name of the log file", "" } ;
+    /// Whether to use a colored console printout
+    BoolParameter           _coloredConsole {*this, "Logfile", "Whether to use a colored console printout", false } ;
   };
 
 } // end namespace marlin
