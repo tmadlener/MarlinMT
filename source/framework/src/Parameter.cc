@@ -1,5 +1,6 @@
 // -- marlin headers
 #include <marlin/Parameter.h>
+#include <marlin/Configuration.h>
 
 namespace marlin {
   
@@ -73,7 +74,7 @@ namespace marlin {
     if( iter == _parameters.end() ) {
       return false ;
     }
-    iter->second->isSet() ;
+    return iter->second->isSet() ;
   }
   
   //--------------------------------------------------------------------------
