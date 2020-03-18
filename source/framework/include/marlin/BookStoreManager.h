@@ -19,13 +19,6 @@ namespace marlin {
    *  @brief  BookStoreManager class
    */
   class BookStoreManager : public Component {
-    // struct ParameterNames {
-    //   static constexpr char OutputFile[] = "OutputFile" ;
-    //   static constexpr char DefaultMemoryLayout[] = "DefaultMemoryLayout" ;
-    //   static constexpr char StoreByDefault[] = "StoreByDefault" ;
-    // };
-  // public:
-  //   using Logger = Logging::Logger;   
   public:
     /// Constructor
     BookStoreManager() ;
