@@ -2,7 +2,6 @@
 #define MARLIN_PROCESSOR_h 1
 
 // -- marlin headers
-#include <marlin/StringParameters.h>
 #include <marlin/Component.h>
 #include <marlin/EventStore.h>
 #include <marlin/RunHeader.h>
