@@ -4,6 +4,13 @@
 #include <marlin/Application.h>
 
 namespace marlin {
+  
+  IScheduler::IScheduler() : 
+    Component("Scheduler") {
+    /* nop */
+  }
+  
+  //--------------------------------------------------------------------------
 
   void IScheduler::initComponent() {
     auto &config = application().configuration() ;

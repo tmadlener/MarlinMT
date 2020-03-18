@@ -22,10 +22,8 @@ namespace marlin {
    */
   class IScheduler :public Component {
   public:
-    IScheduler() : 
-      Component("Scheduler") {
-      /* nop */
-    }
+    /// Constructor
+    IScheduler() ;
     
     virtual ~IScheduler() = default ;
     
