@@ -15,14 +15,13 @@ namespace marlin {
    */
   class SimpleScheduler : public IScheduler {
   public:
-    using Logger = Logging::Logger ;
     using ProcessorSequence = std::shared_ptr<SuperSequence> ;
 
   public:
-    SimpleScheduler() = default ;
+    SimpleScheduler() ;
 
     // from IScheduler interface
-    void init( Application *app ) override ;
+    void initComponent() override ;
     void end() override ;
     void processRunHeader( std::shared_ptr<RunHeader> rhdr ) override ;
     void pushEvent( std::shared_ptr<EventStore> event ) override ;
@@ -30,8 +29,6 @@ namespace marlin {
     std::size_t freeSlots() const override ;
 
   private:
-    ///< The logger instance
-    Logger                           _logger {nullptr} ;
     ///< The processor super sequence
     ProcessorSequence                _superSequence {nullptr} ;
     ///< The current event being processed

@@ -11,46 +11,43 @@
 #include <set>
 
 namespace marlin {
+  
+  SimpleScheduler::SimpleScheduler() :
+    IScheduler() {
+    setComponentName( "SimpleScheduler" ) ;
+  }
+  
+  //--------------------------------------------------------------------------
 
-  void SimpleScheduler::init( Application *app ) {
-    _logger = app->createLogger( "SimpleScheduler" ) ;
-    auto activeProcessors = app->activeProcessors() ;
+  void SimpleScheduler::initComponent() {
+    // base init
+    IScheduler::initComponent() ;
+    auto &config = application().configuration() ;
+    auto &execSection = config.section("execute") ;
+    auto &procsSection = config.section("processors") ;
+    auto activeProcessors = execSection.parameterNames() ;
+    // auto activeProcessors = app->activeProcessors() ;
     // create super sequence with only only sequence and fill it
     _superSequence = std::make_shared<SuperSequence>(1) ;
-    _logger->log<DEBUG5>() << "Creating processors ..." << std::endl ;
+    log<DEBUG5>() << "Creating processors ..." << std::endl ;
     if ( activeProcessors.empty() ) {
-      throw Exception( "SimpleScheduler::init: Active processor list is empty !" ) ;
-    }
-    // check for duplicates first
-    std::set<std::string> duplicateCheck ( activeProcessors.begin() , activeProcessors.end() ) ;
-    if ( duplicateCheck.size() != activeProcessors.size() ) {
-      _logger->log<ERROR>() << "SimpleScheduler::init: the following list of active processors are found to be duplicated :" << std::endl ;
-      for ( auto procName : activeProcessors ) {
-        auto c = std::count( activeProcessors.begin() , activeProcessors.end() , procName ) ;
-        if( c > 1 ) {
-          _logger->log<ERROR>() << "   * " << procName << " (" << c << " instances)" << std::endl ;
-        }
-      }
-      throw Exception( "SimpleScheduler::init: duplicated active processors. Check your steering file !" ) ;
+      MARLIN_THROW( "Active processor list is empty !" ) ;
     }
     // populate processor sequences
     for ( size_t i=0 ; i<activeProcessors.size() ; ++i ) {
       auto procName = activeProcessors[ i ] ;
-      _logger->log<DEBUG5>() << "Active processor " << procName << std::endl ;
-      auto processorParameters = app->processorParameters( procName ) ;
-      if ( nullptr == processorParameters ) {
-        throw Exception( "SimpleScheduler::init: undefined processor '" + procName + "'" ) ;
-      }
-      _superSequence->addProcessor( processorParameters ) ;
+      log<DEBUG5>() << "Active processor " << procName << std::endl ;
+      auto &procSection = procsSection.section( procName ) ;
+      _superSequence->addProcessor( procSection ) ;
     }
-    _superSequence->init( app ) ;
-    _logger->log<DEBUG5>() << "Creating processors ... OK" << std::endl ;
+    _superSequence->init( &application() ) ;
+    log<DEBUG5>() << "Creating processors ... OK" << std::endl ;
   }
 
   //--------------------------------------------------------------------------
 
   void SimpleScheduler::end() {
-    _logger->log<MESSAGE>() << "Terminating application" << std::endl ;
+    log<MESSAGE>() << "Terminating application" << std::endl ;
     _superSequence->end() ;
     // print some statistics
     _superSequence->printStatistics( _logger ) ;
