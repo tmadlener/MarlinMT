@@ -107,6 +107,11 @@ namespace marlin {
     void setVerbosity( const std::string &level ) ;
     
     /**
+     *  @brief  Get the verbosity level
+     */
+    const std::string &verbosity() const ;
+    
+    /**
      *  @brief  Whether the component has been initialized
      */
     bool isInitialized() const ;

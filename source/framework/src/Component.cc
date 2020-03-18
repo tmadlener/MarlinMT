@@ -74,6 +74,12 @@ namespace marlin {
   
   //--------------------------------------------------------------------------
   
+  const std::string &Component::verbosity() const {
+    return _logger->levelName() ;
+  }
+  
+  //--------------------------------------------------------------------------
+  
   const Application &Component::application() const {
     if( nullptr == _application ) {
       MARLIN_THROW( "Application not set" ) ;
