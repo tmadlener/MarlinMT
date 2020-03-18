@@ -287,7 +287,7 @@ namespace marlin {
     iterator end() ;
     const_iterator end() const ;
     
-  private:
+  protected:
     /// The parameter map
     ParameterMap               _parameters {} ;
   };
