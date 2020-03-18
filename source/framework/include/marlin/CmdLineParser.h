@@ -24,7 +24,7 @@ namespace marlin {
       /// Additional command line arguments
       AdditionalArgs                          _additionalArgs {} ;
       /// The config argument
-      std::string                             _config {} ;
+      std::optional<std::string>              _config {} ;
       /// The number of threads
       unsigned int                            _nthreads {1} ;
       /// Whether to dump an example configuration and exit
@@ -38,12 +38,23 @@ namespace marlin {
     ~CmdLineParser() = default ;
     
     /**
+     *  @brief  Set all cmd line arguments to optional during parsing
+     * 
+     *  @param  opt input flag
+     */
+    void setOptionalArgs( bool opt = true ) ;
+    
+    /**
      *  @brief  Parse the command line
      * 
      *  @param  argc the number of arguments
      *  @param  argv the full argument list
      */
     [[nodiscard]] ParseResult parse( int argc, char**argv ) ;
+    
+  private:
+    /// Whether all arguments are optional
+    bool                    _optionalArgs {false} ;
   };
   
 }

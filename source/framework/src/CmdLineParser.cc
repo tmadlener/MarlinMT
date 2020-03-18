@@ -17,9 +17,9 @@ namespace marlin {
     // Create command line object
     TCLAP::CmdLine cmdLine( "MarlinMT", ' ', MARLIN_RELEASE , true ) ;
     // Config argument
-    TCLAP::ValueArg<std::string> configArg( "c", "config", "The input configuration settings (plugin:descriptor)", true, "", "string" ) ;
+    TCLAP::ValueArg<std::string> configArg( "c", "config", "The input configuration settings (plugin:descriptor)", (!_optionalArgs), "", "string" ) ;
     // Dump example config argument
-    TCLAP::ValueArg<std::string> exampleArg( "x", "example", "Dump an example configuration (plugin:descriptor)", true, "", "string" ) ;
+    TCLAP::ValueArg<std::string> exampleArg( "x", "example", "Dump an example configuration (plugin:descriptor)", false, "", "string" ) ;
     cmdLine.xorAdd( configArg, exampleArg ) ;
     // number of cores
     TCLAP::ValueArg<std::string> nthreadsArg( "j", "nthreads", "The number of worker threads (only in multi-threaded mode). 'auto' will use all available cores", false, "auto", "unsigned int / string" ) ;
@@ -66,7 +66,7 @@ namespace marlin {
       parseResult._config = configArg.getValue() ;
       parseResult._dumpExample = false ;
     }
-    else {
+    else if( exampleArg.isSet() ) {
       parseResult._config = exampleArg.getValue() ;
       parseResult._dumpExample = true ;
     }
