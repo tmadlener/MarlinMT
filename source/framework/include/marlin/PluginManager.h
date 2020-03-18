@@ -31,8 +31,8 @@
 
 // processor plugin declaration
 #define MARLIN_DECLARE_PROCESSOR( Class ) namespace { \
-  static const auto __type__ = Class().type() ; \
-  MARLIN_DECLARE_PLUGIN_TYPENAME( Class, __type__ ) \
+  static const auto __processortype__ = Class().type() ; \
+  MARLIN_DECLARE_PLUGIN_NAME( Class, __processortype__ ) \
 }
 
 namespace marlin {
