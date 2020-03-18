@@ -40,7 +40,7 @@ namespace marlin {
   	void processEvent( EventStore * evt ) override ;
 
   protected:
-    Property<int> _howOften {this, "howOften",
+    IntParameter _howOften {*this, "howOften",
               "Print event number every N events", 1 } ;
 
     ///< Event counter
@@ -53,13 +53,13 @@ namespace marlin {
   MemoryMonitorProcessor::MemoryMonitorProcessor() :
     Processor("MemoryMonitor") {
   	// modify processor description
-  	_description = "Simple processor to print out the memory consumption at defined intervals" ;
+  	setDescription( "Simple processor to print out the memory consumption at defined intervals" ) ;
     // It doesn't make sense to create clones of this processor in MT environement
     // So we don't duplicate it per thread. To make it thread-safe we thus need to lock
     // make it thread-safe by using a lock
-    forceRuntimeOption( Processor::RuntimeOption::Critical, true ) ;
+    setRuntimeOption( Processor::ERuntimeOption::eCritical, true ) ;
     // don't duplicate opening/writing of output file
-    forceRuntimeOption( Processor::RuntimeOption::Clone, false ) ;
+    setRuntimeOption( Processor::ERuntimeOption::eClone, false ) ;
   }
 
   //--------------------------------------------------------------------------
