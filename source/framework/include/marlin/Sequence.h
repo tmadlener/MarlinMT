@@ -19,9 +19,9 @@ namespace marlin {
   class Application ;
   class SequenceItem ;
   class Processor ;
-  class StringParameters ;
   class EventStore ;
   class RunHeader ;
+  class ConfigSection ;
 
   //--------------------------------------------------------------------------
   //--------------------------------------------------------------------------
@@ -259,7 +259,7 @@ namespace marlin {
      *
      *  @param  parameters the processor input parameters
      */
-    void addProcessor( std::shared_ptr<StringParameters> parameters ) ;
+    void addProcessor( const ConfigSection &parameters ) ;
 
     /**
      *  @brief  Get the number of sequences
