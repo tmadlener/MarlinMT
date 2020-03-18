@@ -44,7 +44,7 @@ namespace marlin {
     void end() override ;
 
   private:
-    Property<int> _howOften {this, "howOften",
+    IntParameter _howOften {*this, "howOften",
               "Print event number every N events", 1 } ;
 
     // runtime members
@@ -56,13 +56,12 @@ namespace marlin {
   //--------------------------------------------------------------------------
 
   Statusmonitor::Statusmonitor() : Processor("Statusmonitor") {
-
     // modify processor description
-    _description = "Statusmonitor prints out information on running Marlin Job: Prints number of runs run and current number of the event. Counting is sequential and not the run or event ID." ;
-   // no need to lock, this processor is thread safe
-   forceRuntimeOption( Processor::RuntimeOption::Critical, false ) ;
-   // don't duplicate since it is thread safe and hold no big data
-   forceRuntimeOption( Processor::RuntimeOption::Clone, false ) ;
+    setDescription( "Statusmonitor prints out information on running Marlin Job: Prints number of runs run and current number of the event. Counting is sequential and not the run or event ID." ) ;
+    // no need to lock, this processor is thread safe
+    setRuntimeOption( Processor::ERuntimeOption::eCritical, false ) ;
+    // don't duplicate since it is thread safe and hold no big data
+    setRuntimeOption( Processor::ERuntimeOption::eClone, false ) ;
   }
 
   //--------------------------------------------------------------------------
