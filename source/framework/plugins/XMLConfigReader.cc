@@ -27,7 +27,7 @@ namespace marlin {
   public:
     // from ConfigReader
     void init( const std::string &desc ) override ;
-    void read( Configuration &cfg, const ReplacementParametersMap &params = {} ) override ;
+    void read( Configuration &cfg ) override ;
     
   private:
     /**
@@ -82,18 +82,16 @@ namespace marlin {
      *  
      *  @param  idoc the input XML document
      *  @param  cfg the configuration object to populate
-     *  @param  params an optional list of parameters to replace (only for constants)
      */
-    void parseConstants( TiXmlDocument *idoc, Configuration &cfg, ReplacementParametersMap &params ) const ;
+    void parseConstants( TiXmlDocument *idoc, Configuration &cfg ) const ;
     
     /**
      *  @brief  Parse a single <constant> element. Add a constant to the configuration object
      * 
      *  @param  element the constant XML element
      *  @param  cfg the configuration object to populate
-     *  @param  params an optional list of parameters to replace
      */
-    void parseConstant( TiXmlElement *element, Configuration &cfg, ReplacementParametersMap &params ) const ;
+    void parseConstant( TiXmlElement *element, Configuration &cfg ) const ;
     
     /**
      *  @brief  Process all <include> XML elements recursively. 
@@ -176,6 +174,8 @@ namespace marlin {
      */
     TiXmlNode *findElement( TiXmlNode* node, const std::string& tag, const std::string& attribute, const std::string& value ) const ;
     
+    std::optional<std::string> getReplacementParameter( const std::string &arg, const Configuration &config ) const ; 
+    
   private:
     /// The input/output file name
     std::string           _fname {} ;  
@@ -190,7 +190,7 @@ namespace marlin {
   
   //--------------------------------------------------------------------------
   
-  void XMLConfigReader::read( Configuration &cfg, const ReplacementParametersMap &params ) {
+  void XMLConfigReader::read( Configuration &cfg ) {
     // create and parse the XML document
     auto document = std::make_unique<TiXmlDocument>() ;
     bool loadOkay = document->LoadFile( _fname ) ;
@@ -206,10 +206,8 @@ namespace marlin {
     if( nullptr == rootElement || rootElement->ValueStr() != "marlin" ) {
       MARLIN_THROW_T( ParseException, "No root tag <marlin>...</marlin> found in " + _fname ) ;
     }
-    // copy replacement parameters as they will be removed step by step in the parsing
-    ReplacementParametersMap rparams = params ;
     // parse constants
-    parseConstants( document.get(), cfg, rparams ) ;
+    parseConstants( document.get(), cfg ) ;
     // resolve <include> elements
     processIncludeElements( rootElement, cfg ) ;
 
@@ -358,7 +356,7 @@ namespace marlin {
   
   //--------------------------------------------------------------------------
   
-  void XMLConfigReader::parseConstants( TiXmlDocument *idoc, Configuration &cfg, ReplacementParametersMap &params ) const {
+  void XMLConfigReader::parseConstants( TiXmlDocument *idoc, Configuration &cfg ) const {
     TiXmlElement *constantsElement = idoc->RootElement()->FirstChildElement("constants") ;
     TiXmlElement *previous(nullptr), *child(nullptr) ;
     while(1) {
@@ -373,7 +371,7 @@ namespace marlin {
       }
       if( child->ValueStr() == "constant" ) {
         // process single constant
-        parseConstant( child , cfg, params ) ;
+        parseConstant( child , cfg ) ;
       }
       // need to process includes in constants section since some
       // constants may be defined in includes and could then be
@@ -398,7 +396,7 @@ namespace marlin {
   
   //--------------------------------------------------------------------------
   
-  void XMLConfigReader::parseConstant( TiXmlElement* element, Configuration &cfg, ReplacementParametersMap &params ) const {
+  void XMLConfigReader::parseConstant( TiXmlElement* element, Configuration &cfg ) const {
     // parse constant name
     std::string name = getAttribute( element, "name" ) ;
     // parse constant value
@@ -412,14 +410,19 @@ namespace marlin {
       }
     }
     // check if we have a replacement constant
-    auto iter = params.find( "constant" ) ;
-    if( params.end() != iter ) {
-      auto valIter = iter->second.find( name ) ;
-      if( (iter->second.end() != valIter) && (not valIter->second.empty()) ) {
-        value = valIter->second ;
-        iter->second.erase( valIter ) ;
-      }
+    auto replValue = getReplacementParameter( "constant." + name, cfg ) ;
+    if( replValue.has_value() ) {
+      // TODO missing handling of non-existing cmd line parameters
+      value = replValue.value() ;
     }
+    // auto iter = params.find( "constant" ) ;
+    // if( params.end() != iter ) {
+    //   auto valIter = iter->second.find( name ) ;
+    //   if( (iter->second.end() != valIter) && (not valIter->second.empty()) ) {
+    //     value = valIter->second ;
+    //     iter->second.erase( valIter ) ;
+    //   }
+    // }
     cfg.replaceConstants( value ) ;
     cfg.addConstant( name , value ) ;
   }
@@ -618,6 +621,21 @@ namespace marlin {
       }
     }
     return nullptr ;
+  }
+  
+  //--------------------------------------------------------------------------
+  
+  std::optional<std::string> XMLConfigReader::getReplacementParameter( const std::string &arg, const Configuration &config ) const {
+    if( config.hasSection("CmdLine") ) {
+      auto &cmdline = config.section("CmdLine") ;
+      if( cmdline.hasSection("AdditionalArgs") ) {
+        auto &addArgs = cmdline.section("AdditionalArgs") ;
+        if( addArgs.hasParameter( arg ) ) {
+          return addArgs.parameter<std::string>( arg ) ;
+        }
+      }
+    }
+    return std::nullopt ;
   }
   
   // plugin registration
