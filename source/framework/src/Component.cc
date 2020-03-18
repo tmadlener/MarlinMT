@@ -111,4 +111,10 @@ namespace marlin {
     return ( nullptr == _application ) ;
   }
   
+  //--------------------------------------------------------------------------
+  
+  void Component::printParameters() const {
+    printParameters<MESSAGE>() ;
+  }
+  
 }

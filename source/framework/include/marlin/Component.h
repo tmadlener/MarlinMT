@@ -114,6 +114,17 @@ namespace marlin {
     /// Setup the component. Called by the application before initialization
     void setup( Application *app ) ;
     
+    /**
+     *  @brief  Print the component parameters
+     */
+    void printParameters() const ;
+    
+    /**
+     *  @brief  Print the component parameters at specific verbosity
+     */
+    template <class T>
+    void printParameters() const ;
+    
   protected:
     /**
      *  @brief  Get the component description
@@ -134,5 +145,15 @@ namespace marlin {
     /// The verbosity level of the logger (parameter)
     StringParameter          _verbosity { *this, "Verbosity", "The component verbosity level", "MESSAGE" } ;
   };
+  
+  //--------------------------------------------------------------------------
+  //--------------------------------------------------------------------------
+  
+  template <class T>
+  void Component::printParameters() const {
+    for( auto iter : _parameters ) {
+      log<T>() << " - " << iter.first << "(" << iter.second->typeStr() << "): " << iter.second->str() << std::endl ;
+    }
+  }
   
 }
