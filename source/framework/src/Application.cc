@@ -4,12 +4,10 @@
 #include <marlin/PluginManager.h>
 #include <marlin/Utils.h>
 #include <marlin/DataSourcePlugin.h>
-#include <marlin/XMLParser.h>
 #include <marlin/MarlinConfig.h>
 #include <marlin/EventExtensions.h>
 #include <marlin/IScheduler.h>
 #include <marlin/SimpleScheduler.h>
-#include <marlin/XMLTools.h>
 #include <marlin/EventStore.h>
 #include <marlin/RunHeader.h>
 
