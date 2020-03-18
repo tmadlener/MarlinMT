@@ -28,7 +28,7 @@ namespace marlin {
     auto &cmdLineSection = _configuration.createSection( "CmdLine" ) ;
     cmdLineSection.setParameter( "Program", _parseResult._programName ) ;
     cmdLineSection.setParameter( "Arguments", fullCmdLine ) ;
-    cmdLineSection.setParameter( "Config", _parseResult._config ) ;
+    cmdLineSection.setParameter( "Config", _parseResult._config.value() ) ;
     cmdLineSection.setParameter( "NThreads", _parseResult._nthreads ) ;
     auto &argsSection = cmdLineSection.addSection( "AdditionalArgs" ) ;
     for( auto &arg : _parseResult._additionalArgs ) {
@@ -42,7 +42,7 @@ namespace marlin {
     _loggerMgr.mainLogger()->setName( _parseResult._programName ) ;
     
     // parse the config
-    ConfigHelper::readConfig( _parseResult._config, _configuration ) ;
+    ConfigHelper::readConfig( _parseResult._config.value(), _configuration ) ;
     
     // initialize logging
     _loggerMgr.setup( this ) ;
