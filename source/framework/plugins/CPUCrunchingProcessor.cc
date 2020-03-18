@@ -30,10 +30,10 @@ namespace marlin {
     void processEvent( EventStore * evt ) override ;
 
   private:
-    Property<int> _crunchTime {this, "CrunchTime",
+    IntParameter _crunchTime {*this, "CrunchTime",
              "The crunching time (unit ms)", 200 } ;
 
-    Property<float> _crunchSigma {this, "CrunchSigma",
+    FloatParameter _crunchSigma {*this, "CrunchSigma",
              "Smearing factor on the crunching time using a gaussian generator (unit ms)", 0 } ;
   };
 
@@ -43,7 +43,7 @@ namespace marlin {
   CPUCrunchingProcessor::CPUCrunchingProcessor() :
     Processor("CPUCrunching") {
     // modify processor description
-    _description = "CPUCrunchingProcessor crunch CPU time for n milliseconds" ;
+    setDescription( "CPUCrunchingProcessor crunch CPU time for n milliseconds" ) ;
   }
 
   //--------------------------------------------------------------------------
