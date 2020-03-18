@@ -128,9 +128,7 @@ namespace marlin {
 
     void PEPScheduler::preConfigure() {
       // create processor super sequence
-      unsigned int nthreads = _nthreads.isSet() ? 
-        _nthreads.get() : 
-        application().cmdLineParseResult()._nthreads ;
+      unsigned int nthreads = application().cmdLineParseResult()._nthreads ;
       _superSequence = std::make_shared<SuperSequence>(nthreads) ;
     }
 

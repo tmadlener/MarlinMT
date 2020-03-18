@@ -87,8 +87,6 @@ namespace marlin {
       clock::duration_rep              _lockingTime {0} ;
       ///< The total time spent on popping events from the output event pool
       clock::duration_rep              _popTime {0} ;
-      /// The number of threads parameter
-      UIntParameter                    _nthreads {*this, "NThreads", "The number of worker threads", 2} ;
       /// The scheduler event queue size
       UIntParameter                    _queueSize {*this, "EventQueueSize", "The input event queue size (default 2*nthreads)"} ;
     };
