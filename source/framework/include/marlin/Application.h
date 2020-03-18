@@ -1,5 +1,4 @@
-#ifndef MARLIN_APPLICATION_h
-#define MARLIN_APPLICATION_h 1
+#pragma once
 
 // -- marlin headers
 #include <marlin/Exceptions.h>
@@ -51,64 +50,11 @@ namespace marlin {
     void run() ;
     
     const CmdLineParseResult &cmdLineParseResult() const ;
-
-    /**
-     *  @brief  Print command line usage
-     */
-    // void printUsage() const ;
-
+    
     /**
      *  @brief  Get the program name
      */
-    // const std::string &program() const { return _programName ; }
-    // 
-    // /**
-    //  *  @brief  Get the command line arguments
-    //  */
-    // const CmdLineArguments &arguments() const { return _arguments ; }
-
-    /**
-    //  *  @brief  Get the global section parameters
-    //  */
-    // std::shared_ptr<StringParameters> globalParameters () const ;
-    // 
-    // /**
-    //  *  @brief Get the store section parameters.
-    //  *    including setting for the Bookstore Manager.
-    //  */
-    // std::shared_ptr<StringParameters> bookStoreParameters () const ;
-    // 
-    // /**
-    //  *  @brief  Get the geometry section parameters
-    //  */
-    // std::shared_ptr<StringParameters> geometryParameters () const ;
-    // 
-    // /**
-    //  *  @brief  Get the data source section parameters
-    //  */
-    // std::shared_ptr<StringParameters> dataSourceParameters () const ;
-    // 
-    // /**
-    //  *  @brief  Get the processor parameters
-    //  *
-    //  *  @param  name the processor name
-    //  */
-    // std::shared_ptr<StringParameters> processorParameters ( const std::string &name ) const ;
-
-    /**
-    //  *  @brief  Get the XML constants
-    //  */
-    // std::shared_ptr<StringParameters> constants () const ;
-
-    // /**
-    //  *  @brief  Get the active processor list
-    //  */
-    // std::vector<std::string> activeProcessors () const ;
-
-    // /**
-    //  *  @brief  Get the active processor conditions list
-    //  */
-    // std::vector<std::string> processorConditions () const ;
+    const std::string &programName() const ;
 
     /**
      *  @brief  Whether the application has been initialized
@@ -258,5 +204,3 @@ namespace marlin {
   };
 
 } // end namespace marlin
-
-#endif

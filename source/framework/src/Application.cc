@@ -120,6 +120,12 @@ namespace marlin {
   const Application::CmdLineParseResult &Application::cmdLineParseResult() const {
     return _parseResult ;
   }
+  
+  //--------------------------------------------------------------------------
+  
+  const std::string &Application::programName() const { 
+    return cmdLineParseResult()._programName ; 
+  }
 
   //--------------------------------------------------------------------------
 // 
