@@ -285,10 +285,8 @@ namespace marlin {
       }
       processorConditions.push_back( condition ) ;
     }
-    executeSection.setParameter( "ActiveProcessors", processorNames ) ;
-    auto &conditionsSection = executeSection.addSection("conditions") ;
     for( std::size_t i=0 ; i<processorNames.size() ; i++ ) {
-      conditionsSection.setParameter( processorNames[i], processorConditions[i] ) ;
+      executeSection.setParameter( processorNames[i], processorConditions[i] ) ;
     }
   }
   
