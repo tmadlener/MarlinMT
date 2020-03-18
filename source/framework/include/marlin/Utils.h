@@ -340,36 +340,32 @@ namespace marlin {
       static const char* type ;
     };
     
-    template <typename T> const char* type_info<T>::type(typeid(T).name());
-
-#define TYPE_INFO_IMPL( type_id, str ) \
-    template <> const char* type_info<type_id>::type(str);
-
-    TYPE_INFO_IMPL( std::nullptr_t, "null" )
-    TYPE_INFO_IMPL( bool, "bool" )
-    TYPE_INFO_IMPL( short, "short" )
-    TYPE_INFO_IMPL( int, "int" )    
-    TYPE_INFO_IMPL( unsigned int, "unsigned int" )
-    TYPE_INFO_IMPL( float, "float" )    
-    TYPE_INFO_IMPL( double, "double" )
-    TYPE_INFO_IMPL( char, "char" )
-    TYPE_INFO_IMPL( std::string, "string" )
-    TYPE_INFO_IMPL( std::vector<short>, "vector<short>" )
-    TYPE_INFO_IMPL( std::vector<int>, "vector<int>" )
-    TYPE_INFO_IMPL( std::vector<unsigned int>, "vector<unsigned int>" )
-    TYPE_INFO_IMPL( std::vector<float>, "vector<float>" )
-    TYPE_INFO_IMPL( std::vector<double>, "vector<double>" )
-    TYPE_INFO_IMPL( std::vector<char>, "vector<char>" )
-    TYPE_INFO_IMPL( std::vector<std::string>, "vector<string>" )
-
-#undef TYPE_INFO_IMPL
+    template <typename T> const char* type_info<T>::type = typeid(T).name();
+    
+    // dirty C++ specializations ... See Utils.cc file
+    template <> struct type_info<std::nullptr_t> { static const char* type ; };
+    template <> struct type_info<bool> { static const char* type ; };
+    template <> struct type_info<short> { static const char* type ; };
+    template <> struct type_info<int> { static const char* type ; };
+    template <> struct type_info<unsigned int> { static const char* type ; };
+    template <> struct type_info<float> { static const char* type ; };
+    template <> struct type_info<double> { static const char* type ; };
+    template <> struct type_info<char> { static const char* type ; };
+    template <> struct type_info<std::string> { static const char* type ; };
+    template <> struct type_info<std::vector<short>> { static const char* type ; };
+    template <> struct type_info<std::vector<int>> { static const char* type ; };
+    template <> struct type_info<std::vector<unsigned int>> { static const char* type ; };
+    template <> struct type_info<std::vector<float>> { static const char* type ; };
+    template <> struct type_info<std::vector<double>> { static const char* type ; };
+    template <> struct type_info<std::vector<char>> { static const char* type ; };
+    template <> struct type_info<std::vector<std::string>> { static const char* type ; };
+    template <> struct type_info<std::vector<bool>> { static const char* type ; };    
 
     //--------------------------------------------------------------------------
 
-    
     template <typename T>
     struct convert {
-      static std::string to_string( const T &value ) {
+      static inline std::string to_string( const T &value ) {
         std::ostringstream oss ;
         if ((oss << value).fail()) {
           MARLIN_THROW( "to_string failure: " + std::string(details::type_info<T>::type) ) ;
@@ -377,7 +373,7 @@ namespace marlin {
         return oss.str() ;
       }
       
-      static T from_string( const std::string &str ) {
+      static inline T from_string( const std::string &str ) {
         T t ;
         std::istringstream iss(str) ;
         if ((iss >> t).fail()) {
@@ -391,11 +387,11 @@ namespace marlin {
     
     template <>
     struct convert<std::string> {
-      static std::string to_string( const std::string &value ) {
+      static inline std::string to_string( const std::string &value ) {
         return value ;
       }
       
-      static std::string from_string( const std::string &str ) {
+      static inline std::string from_string( const std::string &str ) {
         return str ;
       }
     };
@@ -405,11 +401,11 @@ namespace marlin {
     
     template <>
     struct convert<bool> {
-      static std::string to_string( const bool &value ) {
+      static inline std::string to_string( const bool &value ) {
         return value ? "true" : "false" ;
       }
       
-      static bool from_string( const std::string &str ) {
+      static inline bool from_string( const std::string &str ) {
         static const auto true_list = { "true", "1", "on" } ;
         static const auto false_list = { "false", "0", "off" } ;
         auto strcp = str ;
@@ -429,7 +425,7 @@ namespace marlin {
     
     template <typename T>
     struct convert<std::vector<T>> {
-      static std::string to_string( const std::vector<T> &value ) {
+      static inline std::string to_string( const std::vector<T> &value ) {
         std::stringstream ss ;
         for( auto iter = value.begin() ; iter != value.end() ; ++iter ) {
           ss << details::convert<T>::to_string( *iter ) ;
@@ -440,7 +436,7 @@ namespace marlin {
         return ss.str() ;
       }
       
-      static std::vector<T> from_string( const std::string &str ) {
+      static inline std::vector<T> from_string( const std::string &str ) {
         std::string::size_type lastPos = str.find_first_not_of(" ", 0);
         std::string::size_type pos = str.find_first_of(" ", lastPos);
         typename std::vector<T> tokens ;
@@ -459,7 +455,7 @@ namespace marlin {
     
     template <>
     struct convert<std::vector<std::string>> {
-      static std::string to_string( const std::vector<std::string> &value ) {
+      static inline std::string to_string( const std::vector<std::string> &value ) {
         std::stringstream ss ;
         for( auto iter = value.begin() ; iter != value.end() ; ++iter ) {
           ss << *iter ;
@@ -470,7 +466,7 @@ namespace marlin {
         return ss.str() ;
       }
       
-      static std::vector<std::string> from_string( const std::string &str ) {
+      static inline std::vector<std::string> from_string( const std::string &str ) {
         std::string::size_type lastPos = str.find_first_not_of(" ", 0);
         std::string::size_type pos = str.find_first_of(" ", lastPos);
         std::vector<std::string> tokens ;
