@@ -5,6 +5,9 @@
 #include <memory>
 #include <vector>
 
+// -- marlin headers
+#include <marlin/Component.h>
+
 namespace marlin {
 
   class Application ;
@@ -17,16 +20,20 @@ namespace marlin {
    *  The scheduling can be sequential or parallel (inter-event / intra-event / both).
    *  See implementation classes for more details.
    */
-  class IScheduler {
+  class IScheduler :public Component {
   public:
+    IScheduler() : 
+      Component("Scheduler") {
+      /* nop */
+    }
+    
     virtual ~IScheduler() = default ;
-
+    
     /**
-     *  @brief  Initialize the scheduler with app parameters
-     *
-     *  @param  app the application in which the scheduler runs
+     *  @brief  Initialize the scheduler. 
+     *  Read the config section from the configuration 
      */
-    virtual void init( Application *app ) = 0 ;
+    virtual void initComponent() override ;
 
     /**
      *  @brief  Terminate the scheduler activites
