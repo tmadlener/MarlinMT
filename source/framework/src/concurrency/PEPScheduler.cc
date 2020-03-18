@@ -73,10 +73,11 @@ namespace marlin {
     //--------------------------------------------------------------------------
     //--------------------------------------------------------------------------
 
-    void PEPScheduler::init( Application *app ) {
-      _logger = app->createLogger( "PEPScheduler" ) ;
-      preConfigure( app ) ;
-      configureProcessors( app ) ;
+    void PEPScheduler::initComponent() {
+      // base init
+      IScheduler::initComponent() ;
+      preConfigure() ;
+      configureProcessors() ;
       configurePool() ;
       _startTime = clock::now() ;
     }
@@ -88,9 +89,9 @@ namespace marlin {
       EventList events ;
       popFinishedEvents( events ) ;
       if( not _pushResults.empty() ) {
-        _logger->log<ERROR>() << "This should never happen !!" << std::endl ;
+        error() << "This should never happen !!" << std::endl ;
       }
-      _logger->log<MESSAGE>() << "Terminating application" << std::endl ;
+      message() << "Terminating application" << std::endl ;
       _endTime = clock::now() ;
       _superSequence->end() ;
       // print some statistics
@@ -106,82 +107,77 @@ namespace marlin {
       }
       const double speedup = totalProcessorClock / parallelTime ;
       const double lockTimeFraction = ((totalApplicationClock - totalProcessorClock) / totalApplicationClock) * 100. ;
-      _logger->log<MESSAGE>() << "---------------------------------------------------" << std::endl ;
-      _logger->log<MESSAGE>() << "-- Threading summary" << std::endl ;
-      _logger->log<MESSAGE>() << "--   N threads:                      " << _superSequence->size() << std::endl ;
-      _logger->log<MESSAGE>() << "--   Speedup (serial/parallel):      " << totalProcessorClock << " / " << parallelTime << " = " << speedup << std::endl ;
+      message() << "---------------------------------------------------" << std::endl ;
+      message() << "-- Threading summary" << std::endl ;
+      message() << "--   N threads:                      " << _superSequence->size() << std::endl ;
+      message() << "--   Speedup (serial/parallel):      " << totalProcessorClock << " / " << parallelTime << " = " << speedup << std::endl ;
       if( _superSequence->size() > 1 ) {
         double speedupPercent = (speedup - 1) * 100 / static_cast<double>( _superSequence->size() - 1 ) ;
         if( speedupPercent < 0 ) {
           speedupPercent = 0. ;
         }
-        _logger->log<MESSAGE>() << "--   Speedup percentage:             " << speedupPercent << " " << '%' << std::endl ;
+        message() << "--   Speedup percentage:             " << speedupPercent << " " << '%' << std::endl ;
       }
-      _logger->log<MESSAGE>() << "--   Queue lock time:                " << _lockingTime << " ms" << std::endl ;
-      _logger->log<MESSAGE>() << "--   Pop event time:                 " << _popTime << " ms" << std::endl ;
-      _logger->log<MESSAGE>() << "--   Lock time fraction:             " << lockTimeFraction << " %" << std::endl ;
-      _logger->log<MESSAGE>() << "---------------------------------------------------" << std::endl ;
+      message() << "--   Queue lock time:                " << _lockingTime << " ms" << std::endl ;
+      message() << "--   Pop event time:                 " << _popTime << " ms" << std::endl ;
+      message() << "--   Lock time fraction:             " << lockTimeFraction << " %" << std::endl ;
+      message() << "---------------------------------------------------" << std::endl ;
     }
 
     //--------------------------------------------------------------------------
 
-    void PEPScheduler::preConfigure( Application *app ) {
+    void PEPScheduler::preConfigure() {
       // create processor super sequence
-      _superSequence = std::make_shared<SuperSequence>(
-          app->getConcurrency()) ;
+      unsigned int nthreads = _nthreads.isSet() ? 
+        _nthreads.get() : 
+        application().cmdLineParseResult()._nthreads ;
+      _superSequence = std::make_shared<SuperSequence>(nthreads) ;
     }
 
     //--------------------------------------------------------------------------
 
-    void PEPScheduler::configureProcessors( Application *app ) {
-      _logger->log<DEBUG5>() << "PEPScheduler configureProcessors ..." << std::endl ;
+    void PEPScheduler::configureProcessors() {
+      log<DEBUG5>() << "PEPScheduler configureProcessors ..." << std::endl ;
+      auto &execSection = application().configuration().section("execute") ;
+      auto &procsSection = application().configuration().section("processors") ;
       // create list of active processors
-      auto activeProcessors = app->activeProcessors() ;
+      auto activeProcessors = execSection.parameterNames() ;
+      // auto activeProcessors = app->activeProcessors() ;
       if ( activeProcessors.empty() ) {
-        throw Exception( "PEPScheduler::configureProcessors: Active processor list is empty !" ) ;
-      }
-      // check for duplicates first
-      std::set<std::string> duplicateCheck ( activeProcessors.begin() , activeProcessors.end() ) ;
-      if ( duplicateCheck.size() != activeProcessors.size() ) {
-        _logger->log<ERROR>() << "PEPScheduler::configureProcessors: the following list of active processors are found to be duplicated :" << std::endl ;
-        for ( auto procName : activeProcessors ) {
-          auto c = std::count( activeProcessors.begin() , activeProcessors.end() , procName ) ;
-          if( c > 1 ) {
-            _logger->log<ERROR>() << "   * " << procName << " (" << c << " instances)" << std::endl ;
-          }
-        }
-        throw Exception( "PEPScheduler::configureProcessors: duplicated active processors. Check your steering file !" ) ;
+        MARLIN_THROW( "Active processor list is empty !" ) ;
       }
       // populate processor sequences
       for ( size_t i=0 ; i<activeProcessors.size() ; ++i ) {
         auto procName = activeProcessors[ i ] ;
-        _logger->log<DEBUG5>() << "Active processor " << procName << std::endl ;
-        auto processorParameters = app->processorParameters( procName ) ;
-        if ( nullptr == processorParameters ) {
-          throw Exception( "PEPScheduler::configureProcessors: undefined processor '" + procName + "'" ) ;
-        }
-        _superSequence->addProcessor( processorParameters ) ;
+        log<DEBUG5>() << "Active processor " << procName << std::endl ;
+        auto &procSection = procsSection.section( procName ) ;
+        // if ( nullptr == processorParameters ) {
+        //   throw Exception( "PEPScheduler::configureProcessors: undefined processor '" + procName + "'" ) ;
+        // }
+        _superSequence->addProcessor( procSection ) ;
       }
-      _superSequence->init( app ) ;
-      _logger->log<DEBUG5>() << "PEPScheduler configureProcessors ... DONE" << std::endl ;
+      _superSequence->init( &application() ) ;
+      log<DEBUG5>() << "configureProcessors ... DONE" << std::endl ;
     }
 
     //--------------------------------------------------------------------------
 
     void PEPScheduler::configurePool() {
       // create N workers for N processor sequences
-      _logger->log<DEBUG5>() << "configurePool ..." << std::endl ;
-      _logger->log<DEBUG5>() << "Number of workers: " << _superSequence->size() << std::endl ;
+      log<DEBUG5>() << "configurePool ..." << std::endl ;
+      log<DEBUG5>() << "Number of workers: " << _superSequence->size() << std::endl ;
       for( unsigned int i=0 ; i<_superSequence->size() ; ++i ) {
-        _logger->log<DEBUG>() << "Adding worker ..." << std::endl ;
+        log<DEBUG>() << "Adding worker ..." << std::endl ;
         _pool.addWorker<ProcessorSequenceWorker>( _superSequence->sequence(i) ) ;
       }
-      _logger->log<DEBUG5>() << "starting thread pool" << std::endl ;
-      // start with a default small number
-      _pool.setMaxQueueSize( 2 * _superSequence->size() ) ;
+      log<DEBUG5>() << "starting thread pool" << std::endl ;
+      unsigned int queueSize = _queueSize.isSet() ? 
+        _queueSize.get() : 
+        static_cast<unsigned int>(2 * _superSequence->size()) ;
+      _pool.setMaxQueueSize( queueSize ) ;
       _pool.start() ;
       _pool.setAcceptPush( true ) ;
-      _logger->log<DEBUG5>() << "configurePool ... DONE" << std::endl ;
+      log<DEBUG5>() << "configurePool ... DONE" << std::endl ;
     }
 
     //--------------------------------------------------------------------------
@@ -227,7 +223,7 @@ namespace marlin {
           if( nullptr != output._exception ) {
             std::rethrow_exception( output._exception ) ;
           }
-          _logger->log<MESSAGE>() << "Finished event uid " << output._event->uid() << std::endl ;
+          message() << "Finished event uid " << output._event->uid() << std::endl ;
           events.push_back( output._event ) ;
           iter = _pushResults.erase( iter ) ;
           continue;

@@ -48,19 +48,17 @@ namespace marlin {
       using InputType = std::shared_ptr<EventStore> ;
       using OutputType = WorkerOutput ;
       using WorkerPool = ThreadPool<InputType,OutputType> ;
-      using Logger = Logging::Logger ;
       using ProcessorSequence = std::shared_ptr<SuperSequence> ;
       using PushResultList = std::vector<WorkerPool::PushResult> ;
       using EventList = std::vector<std::shared_ptr<EventStore>> ;
       using Clock = std::chrono::steady_clock ;
       using TimePoint = std::chrono::steady_clock::time_point ;
 
-
     public:
       PEPScheduler() = default ;
 
       // from IScheduler interface
-      void init( Application *app ) override ;
+      void initComponent() override ;
       void end() override ;
       void processRunHeader( std::shared_ptr<RunHeader> rhdr ) override ;
       void pushEvent( std::shared_ptr<EventStore> event ) override ;
@@ -68,15 +66,13 @@ namespace marlin {
       std::size_t freeSlots() const override ;
 
     private:
-      void preConfigure( Application *app ) ;
-      void configureProcessors( Application *app ) ;
+      void preConfigure() ;
+      void configureProcessors() ;
       void configurePool() ;
 
     private:
       ///< The worker thread pool
       WorkerPool                       _pool {} ;
-      ///< The logger instance
-      Logger                           _logger {nullptr} ;
       ///< The processor super sequence
       ProcessorSequence                _superSequence {nullptr} ;
       ///< The list of worker output promises
@@ -91,6 +87,10 @@ namespace marlin {
       clock::duration_rep              _lockingTime {0} ;
       ///< The total time spent on popping events from the output event pool
       clock::duration_rep              _popTime {0} ;
+      /// The number of threads parameter
+      UIntParameter                    _nthreads {*this, "NThreads", "The number of worker threads", 2} ;
+      /// The scheduler event queue size
+      UIntParameter                    _queueSize {*this, "EventQueueSize", "The input event queue size (default 2*nthreads)"} ;
     };
 
   }
