@@ -2,10 +2,11 @@
 
 // -- std headers
 #include <string>
+#include <map>
 
 // -- marlin headers
 #include <marlin/Extensions.h>
-#include <marlin/StringParameters.h>
+#include <marlin/Utils.h>
 
 namespace marlin {
 
@@ -19,6 +20,8 @@ namespace marlin {
    *  can also be attached to a run object but are only valid at runtime.
    */
   class RunHeader {
+    using ParameterMap = std::map<std::string, std::string> ;
+    
   public:
     RunHeader() = default ;
     ~RunHeader() = default ;
@@ -66,12 +69,30 @@ namespace marlin {
     /**
      *  @brief  Get the run parameters
      */
-    const StringParameters &parameters() const ;
+    const ParameterMap &parameters() const ;
 
     /**
      *  @brief  Get the run parameters
      */
-    StringParameters &parameters() ;
+    ParameterMap &parameters() ;
+    
+    /**
+     *  @brief  Get a parameter by name
+     * 
+     *  @param  name the parameter name
+     */
+    template <typename T>
+    std::optional<T> parameter( const std::string &name ) const ;
+    
+    /**
+     *  @brief  Set a run parameter
+     * 
+     *  @param  name the parameter name
+     *  @param  value the parameter value
+     *  @return *this
+     */
+    template <typename T>
+    RunHeader &setParameter( const std::string &name, const T &value ) ;
 
     /**
      *  @brief  Get the run extensions
@@ -90,9 +111,9 @@ namespace marlin {
     std::string                 _detectorName {} ;
     /// The run description
     std::string                 _description {} ;
-    /// The underlying event store implementation
-    StringParameters            _parameters {} ;
-    /// The event extensions
+    /// The run parameters map
+    ParameterMap                _parameters {} ;
+    /// The run extensions
     Extensions                  _extensions {} ;
   };
 
@@ -138,14 +159,33 @@ namespace marlin {
 
   //--------------------------------------------------------------------------
 
-  inline const StringParameters &RunHeader::parameters() const {
+  inline const RunHeader::ParameterMap &RunHeader::parameters() const {
     return _parameters ;
   }
 
   //--------------------------------------------------------------------------
 
-  inline StringParameters &RunHeader::parameters() {
+  inline RunHeader::ParameterMap &RunHeader::parameters() {
     return _parameters ;
+  }
+  
+  //--------------------------------------------------------------------------
+  
+  template <typename T>
+  inline std::optional<T> RunHeader::parameter( const std::string &name ) const {
+    auto iter = _parameters.find( name ) ;
+    if( _parameters.end() != iter ) {
+      return details::convert<T>::from_string( iter->second ) ;
+    }
+    return std::nullopt ;
+  }
+  
+  //--------------------------------------------------------------------------
+  
+  template <typename T>
+  inline RunHeader &RunHeader::setParameter( const std::string &name, const T &value ) {
+    _parameters[name] = details::convert<T>::to_string( value ) ;
+    return *this ;
   }
 
   //--------------------------------------------------------------------------
