@@ -79,8 +79,7 @@ namespace marlin {
     virtual void init() { /* nop */ }
 
     /**
-     *  @brief  Process a run header (start of run)
-     *  Called for every run, e.g. overwrite to initialize run dependent histograms.
+     *  @brief  Call at start of run
      */
     virtual void processRunHeader( RunHeader * ) { /* nop */ }
 
@@ -114,54 +113,12 @@ namespace marlin {
     const std::string &description() const ;
 
     /**
-     *  @brief  Return the name of the local verbosity level of this  processor - "" if not set.
-     */
-    // virtual const std::string & logLevelName() const ;
-
-    /**
-     *  @brief  Return the parameters defined for this Processor.
-     */
-    // virtual std::shared_ptr<StringParameters> parameters() const ;
-
-    // /**
-    //  *  @brief  Print information about this processor in ASCII steering file format.
-    //  */
-    // virtual void printDescription() const ;
-    // 
-    // /**
-    //  *  @brief  Print information about this processor in XML steering file format.
-    //  */
-    // virtual void printDescriptionXML(std::ostream& stream=std::cout) const ;
-
-    /**
-     *  @brief  Print the parameters and their values depending on the given verbosity level.
-     */
-    // template <class T>
-    // void printParameters() const ;
-    // 
-    // /**
-    //  *  @brief  Print the parameters and their values with verbosity level MESSAGE.
-    //  */
-    // void printParameters() const ;
-
-    /**
-     *  @brief  Description of processor.
-     */
-    // const std::string& description() const ;
-
-    /**
      *  @brief  Get the forced runtime option settings.
      *  The return value is set if the forced option was specified by the user.
      *
      *  @param  option the runtime option to get
      */
-    std::optional<bool> forcedRuntimeOption( ERuntimeOption option ) const ;
-
-    /** Sets the registered steering parameters before calling init() */
-    // void baseInit( Application *application ) ;
-
-    /** Initialize the parameters */
-    // void setParameters( std::shared_ptr<StringParameters> parameters) ;
+    std::optional<bool> runtimeOption( ERuntimeOption option ) const ;
 
   protected:
     /**
@@ -190,7 +147,7 @@ namespace marlin {
      *  @param  option the runtime option to force
      *  @param  value the boolean value to set
      */
-    void forceRuntimeOption( ERuntimeOption option, bool value ) ;
+    void setRuntimeOption( ERuntimeOption option, bool value ) ;
     
     /**
      *  @brief  Set the processor description.
@@ -199,54 +156,17 @@ namespace marlin {
      *  @param  description the processor description
      */
     void setDescription( const std::string &description ) ;
+    
+  private:
+    /// From Component class
+    void initComponent() override ;
 
-  // private:
-    // /** Allow friend class CCProcessor to change/reset processor parameters */
-    // virtual void setProcessorParameters( std::shared_ptr<StringParameters> processorParameters) ;
-
-    // /** Allow friend class CCProcessor to update processor parameters */
-    // virtual void updateParameters();
-
-    /** Set processor name */
-    // void setName( const std::string & processorName) ;
-
-  // protected:
-    // /// The processor description
-    // std::string                        _description {""} ;
-    // /// The processor type
-    // std::string                        _typeName {""} ;
-    /// The processor parameters
-    // std::shared_ptr<StringParameters>  _parameters {nullptr} ;
-    /// The processor logger level
-    // std::string                        _logLevelName {} ;
-
-  // private:
-    // /// The processor logger. See log<T>() for details
-    // Logger                             _logger {nullptr} ;
-    // /// The application in which the processor is running
-    // Application                       *_application {nullptr} ;
+  private:
     /// The user forced runtime options for parallel processing
     RuntimeOptions                     _forcedRuntimeOptions {} ;
   };
 
   //--------------------------------------------------------------------------
-  //--------------------------------------------------------------------------
-
-  // template <class T>
-  // inline void Processor::printParameters() const {
-  //   if( _logger->wouldWrite<T>() ) {
-  //     _logger->log<T>() << std::endl << "---- " << name()  <<" -  parameters: " << std::endl ;
-  //     for( auto i = this->pbegin() ; i != this->pend() ; i ++ ) {
-  //       if( ! i->second->isOptional() || i->second->valueSet() ){
-  //         _logger->log<T>() << "\t"   << i->second->name()
-  //              << ":  "  << i->second->value()
-  //              << std::endl ;
-  //       }
-  //     }
-  //     _logger->log<T>() << "-------------------------------------------------" << std::endl ;
-  //   }
-  // }
-
   //--------------------------------------------------------------------------
 
   inline const std::string &Processor::type() const {
@@ -261,74 +181,9 @@ namespace marlin {
   
   //--------------------------------------------------------------------------
 
-  inline const std::string& Processor::description() const {
+  inline const std::string &Processor::description() const {
     return componentDescription() ;
   }
-
-  // //--------------------------------------------------------------------------
-  // 
-  // inline const std::string & Processor::logLevelName() const {
-  //   return _logLevelName ;
-  // }
-  // 
-  // //--------------------------------------------------------------------------
-  // 
-  // inline std::shared_ptr<StringParameters> Processor::parameters() const {
-  //   return _parameters ;
-  // }
-
-
-
-  //--------------------------------------------------------------------------
-
-  // template<class T>
-  // inline void Processor::registerProcessorParameter(const std::string& parameterName,
-  //        const std::string& parameterDescription,
-  //        T& parameter,
-  //        const T& defaultVal,
-  //        int setSize ) {
-  //   registerParameter( parameterName, parameterDescription, parameter, defaultVal, setSize ) ;
-  // }
-  // 
-  // //--------------------------------------------------------------------------
-  // 
-  // template <class T>
-  // inline void Processor::message(  const std::string& m ) const {
-  //   _logger->log<T>() << m << std::endl ;
-  // }
-  // 
-  // //--------------------------------------------------------------------------
-  // 
-  // template <class T>
-  // inline void Processor::message( const std::ostream& m) const {
-  //   if( T::active ){  // allow the compiler to optimize this away ...
-  //     try {
-  //       const std::stringstream& mess = dynamic_cast<const std::stringstream&>( m ) ;
-  //       this->template message<T>( mess.str() ) ;
-  //     }
-  //     catch( std::bad_cast ) {}
-  //   }
-  // }
-  // 
-  // //--------------------------------------------------------------------------
-  // 
-  // template <class T>
-  // inline Logging::StreamType Processor::log() const {
-  //   return _logger->log<T>() ;
-  // }
-  // 
-  // //--------------------------------------------------------------------------
-  // 
-  // inline void Processor::setProcessorParameters( std::shared_ptr<StringParameters> processorParameters) {
-  //    setParameters( processorParameters ) ;
-  // }
-  // 
-  // //--------------------------------------------------------------------------
-  // 
-  // inline void Processor::setName( const std::string & processorName) {
-  //   _processorName = processorName ;
-  //   _logger->setName( processorName );
-  // }
 
 } // end namespace marlin
 

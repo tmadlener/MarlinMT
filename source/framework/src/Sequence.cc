@@ -6,6 +6,7 @@
 #include <marlin/EventExtensions.h>
 #include <marlin/StringParameters.h>
 #include <marlin/PluginManager.h>
+#include <marlin/Configuration.h>
 
 // -- std headers
 #include <algorithm>
@@ -185,7 +186,7 @@ namespace marlin {
 
   void SuperSequence::init( Application *app ) {
     for( auto item : _uniqueItems ) {
-      item->processor()->baseInit( app ) ;
+      item->processor()->setup( app ) ;
     }
   }
 
@@ -197,40 +198,41 @@ namespace marlin {
 
   //--------------------------------------------------------------------------
 
-  void SuperSequence::addProcessor( std::shared_ptr<StringParameters> parameters ) {
-    const bool cloneSet = parameters->isParameterSet( "ProcessorClone" ) ;
-    const bool criticalSet = parameters->isParameterSet( "ProcessorCritical" ) ;
-    bool clone = parameters->getValue<bool>( "ProcessorClone", true ) ;
-    bool critical = parameters->getValue<bool>( "ProcessorCritical", false ) ;
-    auto type = parameters->getValue<std::string>( "ProcessorType" ) ;
+  void SuperSequence::addProcessor( const ConfigSection &parameters ) {
+    
+    const bool cloneSet = parameters.hasParameter( "ProcessorClone" ) ;
+    const bool criticalSet = parameters.hasParameter( "ProcessorCritical" ) ;
+    bool clone = parameters.parameter<bool>( "ProcessorClone", true ) ;
+    bool critical = parameters.parameter<bool>( "ProcessorCritical", false ) ;
+    auto type = parameters.parameter<std::string>( "ProcessorType" ) ;
     auto &pluginMgr = PluginManager::instance() ;
-    auto processor = pluginMgr.create<Processor>( PluginType::Processor, type ) ;
+    auto processor = pluginMgr.create<Processor>( type ) ;
     if( nullptr == processor ) {
       throw Exception( "Processor of type '" + type + "' doesn't exists !" ) ;
     }
-    auto cloneOpt = processor->getForcedRuntimeOption( Processor::RuntimeOption::Clone ) ;
-    auto criticalOpt = processor->getForcedRuntimeOption( Processor::RuntimeOption::Critical ) ;
-    if( cloneOpt.first ) {
-      if( cloneSet and (cloneOpt.second != clone) ) {
+    auto cloneOpt = processor->runtimeOption( Processor::ERuntimeOption::eClone ) ;
+    auto criticalOpt = processor->runtimeOption( Processor::ERuntimeOption::eCritical ) ;
+    if( cloneOpt.has_value() ) {
+      if( cloneSet and (cloneOpt.value() != clone) ) {
         throw Exception( "Processor '" +
         type +
         "' clone option forced to " +
-        (cloneOpt.second ? "true" : "false") +
+        (cloneOpt.value() ? "true" : "false") +
         "!") ;
       }
-      clone = cloneOpt.second ;
+      clone = cloneOpt.value() ;
     }
-    if( criticalOpt.first ) {
-      if( criticalSet and (criticalOpt.second != critical) ) {
+    if( criticalOpt.has_value() ) {
+      if( criticalSet and (criticalOpt.value() != critical) ) {
         throw Exception( "Processor '" +
         type +
         "' critical option forced to " +
-        (criticalOpt.second ? "true" : "false") +
+        (criticalOpt.value() ? "true" : "false") +
         "!") ;
       }
-      critical = criticalOpt.second ;
+      critical = criticalOpt.value() ;
     }
-    processor->setParameters( parameters ) ;
+    // processor->setParameters( parameters ) ;
     std::shared_ptr<std::mutex> lock = critical ? std::make_shared<std::mutex>() : nullptr ;
     if( clone ) {
       // add the first but then create new processor instances and add them
@@ -238,8 +240,8 @@ namespace marlin {
       _sequences.at(0)->addItem( item ) ;
       _uniqueItems.insert( item ) ;
       for( SizeType i=1 ; i<size() ; ++i ) {
-        processor = pluginMgr.create<Processor>( PluginType::Processor, type ) ;
-        processor->setParameters( parameters ) ;
+        processor = pluginMgr.create<Processor>( type ) ;
+        // processor->setParameters( parameters ) ;
         item = _sequences.at(i)->createItem( processor, lock ) ;
         _sequences.at(i)->addItem( item ) ;
         _uniqueItems.insert( item ) ;
