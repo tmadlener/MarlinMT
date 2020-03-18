@@ -151,8 +151,9 @@ namespace marlin {
   
   template <class T>
   void Component::printParameters() const {
+    log<T>() << componentName() << " [" << componentType() << "] parameters:" << std::endl ;
     for( auto iter : _parameters ) {
-      log<T>() << " - " << iter.first << "(" << iter.second->typeStr() << "): " << iter.second->str() << std::endl ;
+      log<T>() << iter.first << "(" << iter.second->typeStr() << "): " << iter.second->str() << std::endl ;
     }
   }
   
