@@ -91,6 +91,9 @@ namespace marlin {
      *  @param  event the event to process
      */
     void processEvent( std::shared_ptr<EventStore> event ) ;
+    
+    /// Init data source
+    virtual void initComponent() override ;
 
   protected:
     ///< The data source description

@@ -59,5 +59,14 @@ namespace marlin {
     }
     _onEventRead( event ) ;
   }
+  
+  //--------------------------------------------------------------------------
+  
+  void DataSourcePlugin::initComponent() {
+    auto &config = application().configuration() ;
+    if( config.hasSection("datasource") ) {
+      setParameters( config.section("datasource") ) ;
+    }
+  }
 
 }
