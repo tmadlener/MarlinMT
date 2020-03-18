@@ -63,26 +63,15 @@ namespace marlin {
 
   TestProcessor::TestProcessor() :
     Processor("TestProcessor") {
-    _description = "Simple processor to test the marlin application."
-      " Prints run and event number." ;
+    setDescription( "Simple processor to test the marlin application."
+      " Prints run and event number." ) ;
   }
 
   //--------------------------------------------------------------------------
 
   void TestProcessor::init() {
-
-    log<MESSAGE>() << "TestProcessor::init()  " << name()
-			     << std::endl
-			     << "  parameters: " << std::endl
-			     << *parameters()
-			     << std::endl ;
-
-
-#ifdef MARLIN_VERSION_GE
-#if MARLIN_VERSION_GE( 0, 9, 8 )
-    log<DEBUG>() << " marlin version is g.e. 0.9.8 " << std::endl ;
-#endif
-#endif
+    log<MESSAGE>() << "TestProcessor::init()  " << name() << std::endl ;
+		printParameters() ;
   }
 
   //--------------------------------------------------------------------------
@@ -121,7 +110,7 @@ namespace marlin {
 
     log<MESSAGE>() << " processing event uid " << evt->uid() << std::endl ;
 
-    log<MESSAGE>() << "(MESSAGE) local verbosity level: " << logLevelName() << std::endl ;
+    log<MESSAGE>() << "(MESSAGE) local verbosity level: " << verbosity() << std::endl ;
 
     // always return true for this processor
     ProcessorApi::setReturnValue( this, evt, true ) ;
