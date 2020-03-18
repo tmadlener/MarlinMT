@@ -4,12 +4,12 @@
 #include <marlin/Processor.h>
 #include <marlin/Exceptions.h>
 #include <marlin/EventExtensions.h>
-#include <marlin/StringParameters.h>
 #include <marlin/PluginManager.h>
 #include <marlin/Configuration.h>
 
 // -- std headers
 #include <algorithm>
+#include <iomanip>
 
 namespace marlin {
 
