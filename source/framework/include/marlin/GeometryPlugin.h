@@ -75,9 +75,13 @@ namespace marlin {
     const std::string &type() const ;
 
     /**
-     *  Print the complete geometry plugin description.
+     *  @brief  Print the complete geometry plugin description.
      */
     void print() const ;
+    
+  protected:
+    /// Init the geometry plugin
+    virtual void initComponent() override ; 
 
   protected:
     /// Whether to dump the geometry on creation

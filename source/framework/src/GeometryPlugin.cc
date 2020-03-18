@@ -28,5 +28,14 @@ namespace marlin {
     }
     message() << "----------------------------------------------------------" << std::endl ;
   }
+  
+  //--------------------------------------------------------------------------
+  
+  void GeometryPlugin::initComponent() {
+    auto &config = application().configuration() ;
+    if( config.hasSection("geometry") ) {
+      setParameters( config.section("geometry") ) ;
+    }
+  }
 
 } // namespace marlin
