@@ -82,6 +82,13 @@ namespace marlin {
   protected:
     /// Init the geometry plugin
     virtual void initComponent() override ; 
+    
+    /**
+     *  @brief  Set the geometry description.
+     *
+     *  @param  desc a short plugin description
+     */
+    void setDescription( const std::string &desc ) ;
 
   protected:
     /// Whether to dump the geometry on creation
@@ -99,6 +106,12 @@ namespace marlin {
 
   inline const std::string &GeometryPlugin::type() const {
     return componentName() ;
+  }
+  
+  //--------------------------------------------------------------------------
+  
+  inline void GeometryPlugin::setDescription( const std::string &desc ) {
+    setComponentDescription( desc ) ;
   }
 
 } // end namespace marlin
