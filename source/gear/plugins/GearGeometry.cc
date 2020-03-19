@@ -30,7 +30,7 @@ namespace marlin {
     void dumpGeometry() const ;
     
   private:
-    Property<std::string> _gearFile {this, "GearFile",
+    StringParameter _gearFile {*this, "GearFile",
                       "The GEAR geometry XML file" } ;
     /// The Gear manager handling geometry
     std::unique_ptr<gear::GearMgr>    _gearMgr {nullptr} ;
@@ -41,7 +41,7 @@ namespace marlin {
 
   GearGeometry::GearGeometry() :
     GeometryPlugin("Gear") {
-    _description = "Gear geometry plugin. Use geoMgr->geometry<gear::GearMgr>() to access the geometry" ;
+    setDescription( "Gear geometry plugin. Use geoMgr->geometry<gear::GearMgr>() to access the geometry" ) ;
   }
 
   //--------------------------------------------------------------------------
@@ -75,7 +75,7 @@ namespace marlin {
     _logger->log<MESSAGE>() << *_gearMgr << std::endl ;
   }
 
-  MARLIN_DECLARE_GEOPLUGIN( GearGeometry )
+  MARLIN_DECLARE_PLUGIN( GearGeometry )
   
 } // namespace marlin
 
