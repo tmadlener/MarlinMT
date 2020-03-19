@@ -1,12 +1,18 @@
 
-#include <marlin/XMLParser.h>
+// -- marlin headers
+#include <marlin/Configuration.h>
+#include <marlin/CmdLineParser.h>
 #include <marlin/Utils.h>
 
+// -- std headers
+#include <iostream>
 #include <set>
+#include <vector>
+#include <string>
 
-void dumpParameters( const std::string &section, std::shared_ptr<marlin::StringParameters> parameters, const std::set<std::string> &skip ) ;
-void processCmdLine( int argc, char **argv, std::string &fname, marlin::CommandLineParametersMap &opts ) ;
+using namespace marlin ;
 
+void globParameters( const ConfigSection &section, std::vector<std::string> &parameters, const std::set<std::string> &skip ) ;
 
 /**
  *  Completion helper program. For internal use only
@@ -18,91 +24,77 @@ void processCmdLine( int argc, char **argv, std::string &fname, marlin::CommandL
 int main(int argc, char** argv ) {
 
   // ---- catch all uncaught exceptions in the end ...
-  try {
-    if( argc < 2 ) {
-      // Return silently as this is used for shell completion
-      return 1 ;
-    }
-
-    std::string steeringFileName ;
-    marlin::CommandLineParametersMap opts ;
-
-    processCmdLine( argc, argv, steeringFileName, opts ) ;
-
-    std::unique_ptr<marlin::XMLParser> parser ( new marlin::XMLParser(steeringFileName) ) ;
-    parser->setCmdLineParameters( opts ) ;
-    parser->parse() ;
-
-    auto sections = parser->getSections() ;
-    // Global, Geometry, Constants, DataSource + Processors
-    
-    for( auto section : sections ) {
-      auto parameters = parser->getParameters( section ) ;
-      if( nullptr == parameters ) {
-        continue ;
-      }
-      auto parameterKeys = parameters->keys() ;
-      if( section == "Global" ) {
-        dumpParameters( "global", parameters, { "ActiveProcessor", "AvailableProcessors", "ProcessorConditions" } ) ;
-      }
-      else if( section == "Geometry" ) {
-        dumpParameters( "geometry", parameters, { "GeometryType" } ) ;
-      }
-      else if( section == "DataSource" ) {
-        dumpParameters( "datasource", parameters, { "DataSourceType" } ) ;
-      }
-      else if( section == "Constants" ) {
-        dumpParameters( "constant", parameters, {} ) ;
-      }
-      else {
-        // processor case
-        dumpParameters( section, parameters, { "ProcessorClone", "ProcessorCritical", "ProcessorName", "ProcessorType" } ) ;
-      }
-    }
-    return 0 ;
-  } 
-  catch( std::exception& e) {
-    std::cout << "Caught exception: " << e.what() << std::endl ;
+  if( argc < 2 ) {
+    // Return silently as this is used for shell completion
     return 1 ;
   }
+
+  try {
+    // parse the command line in relax mode
+    CmdLineParser parser ;
+    parser.setOptionalArgs( true ) ;
+    CmdLineParser::ParseResult parseResult = parser.parse( argc, argv ) ;
+    
+    // no config file on the command line yet, just return
+    if( not parseResult._config.has_value() or parseResult._dumpExample) {
+      return 1 ;
+    }
+    // try to parse the configuration
+    Configuration configuration {} ;
+    ConfigHelper::readConfig( parseResult._config.value(), configuration ) ;
+    
+    // 1 - Get command line options
+    auto cmdLineOpts = parser.getStandardOptions() ;
+
+    // 2 - Get all section parameters
+    std::vector<std::string> parameters ;
+    auto sections = configuration.sections() ;
+    for( auto sec : sections ) {
+      auto &section = configuration.section( sec ) ;
+      if( section.name() == "processors" ) {
+        auto procSections = section.subsectionNames() ;
+        for( auto proc : procSections ) {
+          auto &procSection = section.section( proc ) ;
+          globParameters( procSection, parameters, {"ProcessorName", "ProcessorType"} ) ;
+        }
+      }
+      else if( section.name() == "geometry" ) {
+        globParameters( section, parameters, {"GeometryType"} ) ;
+      }
+      else if( section.name() == "datasource" ) {
+        globParameters( section, parameters, {"DatasourceType"} ) ;
+      }
+      else {
+        globParameters( section, parameters, {} ) ;
+      }
+    }
+    
+    // 3 - Get all constants
+    auto constants = details::keys( configuration.constants() ) ;
+    
+    // 4 - Combine and print
+    std::vector<std::string> allOptions ;
+    allOptions.insert( allOptions.end(), cmdLineOpts.begin(), cmdLineOpts.end() ) ;
+    allOptions.insert( allOptions.end(), parameters.begin(), parameters.end() ) ;
+    allOptions.insert( allOptions.end(), constants.begin(), constants.end() ) ;
+
+    for( auto &opt : allOptions ) {
+      std::cout << opt << std::endl ;
+    }
+  }
+  catch(...) {
+    return 1 ;
+  }  
 }
 
-
-
-void dumpParameters( const std::string &section, std::shared_ptr<marlin::StringParameters> parameters, const std::set<std::string> &skip ) {
-  auto parameterKeys = parameters->keys() ;
-  for( auto key : parameterKeys ) {
-    if( key.substr(0, 8) == "_marlin." ) {
+void globParameters( const ConfigSection &section, std::vector<std::string> &parameters, const std::set<std::string> &skip ) {
+  auto names = section.parameterNames() ;
+  for( auto name : names ) {
+    if( skip.end() != skip.find( name ) ) {
       continue ;
     }
-    if( skip.end() != skip.find( key ) ) {
-      continue ;
-    }
-    std::cout << "--" << section << "." << key << "=" << std::endl ;          
+    parameters.push_back( "--" + section.name() + "." + name + "=" ) ;
+    // TODO keep this ?
+    parameters.push_back( "--" + section.name() + "." + name + "=" + section.parameter<std::string>( name ) ) ;
   }
 }
-
-
-
-void processCmdLine( int argc, char **argv, std::string &fname, marlin::CommandLineParametersMap &opts ) {
-  fname = argv[1] ;
-  for( int i=2 ; i<argc ; i++ ) {
-    std::string arg = argv[i] ;
-    if ( arg.substr( 0, 2 ) == "--" ) {
-      auto argVec = marlin::StringUtil::split<std::string>( arg.substr( 2 ) , "=" ) ;
-      if ( argVec.size() != 2 ) {
-        // std::cout << "*** invalid command line option: " << arg << std::endl ;
-        continue ;
-      }
-      auto argKey = marlin::StringUtil::split<std::string>( argVec[0] , "." ) ;
-      if ( argKey.size() != 2 ) {
-        // std::cout << "*** invalid command line option: " << arg << std::endl ;
-        continue ;
-      }
-      opts[ argKey[0] ][ argKey[1] ] = argVec[1] ;
-    }
-  }
-}
-
-
-
