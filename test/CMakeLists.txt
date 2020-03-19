@@ -67,7 +67,7 @@ endif()
 
 marlin_add_test (
   marlinminusx
-  COMMAND $<TARGET_FILE:bin_Marlin>
+  COMMAND $<TARGET_FILE:bin_MarlinMT>
   EXEC_ARGS -x test_marlinminusx.xml
   REGEX_PASS NONE
 )

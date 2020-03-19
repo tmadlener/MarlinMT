@@ -96,7 +96,7 @@ target_link_libraries(
 marlin_add_plugin_library( TARGETS CorePlugins )
 
 # Create all executables out of the main directory
-set( MarlinMT_BINARIES MarlinShellCompletion MarlinDumpPlugins Marlin MarlinMT )
+set( MarlinMT_BINARIES MarlinShellCompletion MarlinDumpPlugins MarlinMT )
 foreach( binary ${MarlinMT_BINARIES} )
   add_executable( bin_${binary} main/${binary}.cc )
   target_link_libraries( bin_${binary} Marlin::Core )
