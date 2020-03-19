@@ -43,13 +43,13 @@ namespace marlin {
     void printDetectorSets( const std::string &name, unsigned int includeFlag, unsigned int excludeFlag ) const ;
     
   private:
-    Property<std::string> _compactFile {this, "CompactFile",
+    StringParameter _compactFile {*this, "CompactFile",
              "The DD4hep geometry compact XML file" } ;
 
-    OptionalProperty<bool> _dumpDetectorData {this, "DumpDetectorData",
+    BoolParameter _dumpDetectorData {*this, "DumpDetectorData",
              "Whether to dump detector data while dumping the geometry", false } ;
              
-    OptionalProperty<bool> _dumpDetectorSurfaces {this, "DumpDetectorSurfaces",
+    BoolParameter _dumpDetectorSurfaces {*this, "DumpDetectorSurfaces",
              "Whether to dump surfaces while dumping the geometry", false } ;
   };
   
@@ -58,7 +58,7 @@ namespace marlin {
 
   DD4hepGeometry::DD4hepGeometry() :
     GeometryPlugin("DD4hep") {
-    _description = "DD4hep geometry plugin. Use geoMgr->geometry<dd4hep::Detector>() to access the geometry" ;
+    setDescription( "DD4hep geometry plugin. Use geoMgr->geometry<dd4hep::Detector>() to access the geometry" ) ;
   }
 
   //--------------------------------------------------------------------------
@@ -222,6 +222,6 @@ namespace marlin {
     _logger->log<MESSAGE>() << "############################################################################### "  << std::endl  << std::endl  ;
   }
   
-  MARLIN_DECLARE_GEOPLUGIN( DD4hepGeometry )
+  MARLIN_DECLARE_PLUGIN( DD4hepGeometry )
 
 } // namespace marlin
