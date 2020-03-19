@@ -33,7 +33,7 @@ namespace marlin {
   LCIOEventUnpackingProcessor::LCIOEventUnpackingProcessor() :
     Processor("LCIOEventUnpacking") {
     // modify processor description
-    _description = "LCIOEventUnpackingProcessor unpacks LCIO event" ;
+    setDescription( "LCIOEventUnpackingProcessor unpacks LCIO event" ) ;
   }
 
   //--------------------------------------------------------------------------

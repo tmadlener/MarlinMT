@@ -28,7 +28,7 @@ namespace marlin {
   class EventSelectorProcessor : public Processor {
     using EventNumberSet = std::set< std::pair< int, int > > ;
 
-   public:
+  public:
     /**
      *  @brief  Constructor
      */
@@ -38,8 +38,8 @@ namespace marlin {
     void init() ;
     void processEvent( EventStore * evt ) ;
 
-   protected:
-     Property<std::vector<int>> _evtList {this, "EventList",
+  protected:
+    IntVectorParameter _evtList {*this, "EventList",
               "event list - pairs of Eventnumber RunNumber" } ;
     ///< The event list as a set
     EventNumberSet        _evtSet {} ;
@@ -51,7 +51,7 @@ namespace marlin {
   EventSelectorProcessor::EventSelectorProcessor() :
     Processor("EventSelector") {
     // modify processor description
-    _description = "EventSelectorProcessor returns true if given event was specified in EventList" ;
+    setDescription( "EventSelectorProcessor returns true if given event was specified in EventList" ) ;
   }
 
   //--------------------------------------------------------------------------
@@ -64,7 +64,7 @@ namespace marlin {
       throw Exception( "EventSelectorProcessor: event list size should be even (list of run / event ids)" ) ;
     }
     for( unsigned i=0 ; i <nEvts ; i+=2 ) {
-      _evtSet.insert( std::make_pair( _evtList[i] , _evtList[ i+1 ] ) ) ;
+      _evtSet.insert( std::make_pair( _evtList.at(i) , _evtList.at( i+1 ) ) ) ;
     }
   }
 
