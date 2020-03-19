@@ -11,6 +11,21 @@
 
 namespace marlin {
   
+  void CmdLineParser::setOptionalArgs( bool opt ) {
+    _optionalArgs = opt ;
+  }
+  
+  //--------------------------------------------------------------------------
+  
+  std::vector<std::string> CmdLineParser::getStandardOptions() const {
+    return { "-c", "--config", 
+      "-x", "--example", 
+      "-j", "nthreads",
+      "--help", "--version" };
+  }
+  
+  //--------------------------------------------------------------------------
+  
   CmdLineParser::ParseResult CmdLineParser::parse( int argc, char**argv ) {
     ParseResult parseResult {} ;
     parseResult._arguments.reserve(argc) ;

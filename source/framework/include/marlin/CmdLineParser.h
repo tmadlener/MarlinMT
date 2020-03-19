@@ -45,6 +45,11 @@ namespace marlin {
     void setOptionalArgs( bool opt = true ) ;
     
     /**
+     *  @brief  Get all possible command options (short and long options)
+     */
+    std::vector<std::string> getStandardOptions() const ;
+    
+    /**
      *  @brief  Parse the command line
      * 
      *  @param  argc the number of arguments
