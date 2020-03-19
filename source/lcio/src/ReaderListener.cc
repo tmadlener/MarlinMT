@@ -48,29 +48,29 @@ namespace marlin {
       header->setDetectorName( rhdr->getDetectorName() ) ;
       header->setDescription( rhdr->getDescription() ) ;
       auto subdets = rhdr->getActiveSubdetectors() ;
-      header->parameters().add( "ActiveSubdetectors", *subdets ) ;
+      header->setParameter( "ActiveSubdetectors", *subdets ) ;
       auto &lcparams = rhdr->parameters() ;
       EVENT::StringVec intKeys, floatKeys, strKeys ;
       lcparams.getIntKeys( intKeys ) ;
       lcparams.getFloatKeys( floatKeys ) ;
       lcparams.getStringKeys( strKeys ) ;
-      header->parameters().add( "LCIntKeys", intKeys ) ;
-      header->parameters().add( "LCFloatKeys", floatKeys ) ;
-      header->parameters().add( "LCStrKeys", strKeys ) ;
+      header->setParameter( "LCIntKeys", intKeys ) ;
+      header->setParameter( "LCFloatKeys", floatKeys ) ;
+      header->setParameter( "LCStrKeys", strKeys ) ;
       for( auto key : intKeys ) {
         EVENT::IntVec values ;
         lcparams.getIntVals( key, values ) ;
-        header->parameters().add( key, values ) ;
+        header->setParameter( key, values ) ;
       }
       for( auto key : intKeys ) {
         EVENT::FloatVec values ;
         lcparams.getFloatVals( key, values ) ;
-        header->parameters().add( key, values ) ;
+        header->setParameter( key, values ) ;
       }
       for( auto key : intKeys ) {
         EVENT::StringVec values ;
         lcparams.getStringVals( key, values ) ;
-        header->parameters().add( key, values ) ;
+        header->setParameter( key, values ) ;
       }
       _onRunHeaderRead( header ) ;
     }
