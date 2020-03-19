@@ -34,6 +34,12 @@ namespace marlin {
   
   //--------------------------------------------------------------------------
   
+  void ParameterImpl::str( const std::string &value ) {
+    _fromStrFunction( value ) ;
+  }
+  
+  //--------------------------------------------------------------------------
+  
   std::string ParameterImpl::typeStr() const {
     return _typeFunction() ;
   }

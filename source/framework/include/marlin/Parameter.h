@@ -89,7 +89,7 @@ namespace marlin {
     /**
      *  @brief  Set the parameter value from a string
      */
-    void str( const std::string &value ) const ;
+    void str( const std::string &value ) ;
     
     /**
      *  @brief  Get the parameter type as string
