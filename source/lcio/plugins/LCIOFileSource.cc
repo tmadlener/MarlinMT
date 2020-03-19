@@ -35,28 +35,28 @@ namespace marlin {
     LCIOFileSource() ;
     ~LCIOFileSource() = default ;
 
-    // from DataSourcePlugin
-    void init() ;
-    bool readOne() ;
+    // from base
+    void initComponent() override ;
+    bool readOne() override ;
 
   private:
     void onLCEventRead( std::shared_ptr<EVENT::LCEvent> event ) ;
     void onLCRunHeaderRead( std::shared_ptr<EVENT::LCRunHeader> rhdr ) ;
 
   private:
-    Property<std::vector<std::string>> _inputFileNames {this, "LCIOInputFiles",
+    StringVectorParameter _inputFileNames {*this, "LCIOInputFiles",
                 "The list of LCIO input files" } ;
 
-    Property<int> _maxRecordNumber {this, "MaxRecordNumber",
+    IntParameter _maxRecordNumber {*this, "MaxRecordNumber",
                 "The maximum number of records to read", 0 } ;
 
-    Property<int> _skipNEvents {this, "SkipNEvents",
+    IntParameter _skipNEvents {*this, "SkipNEvents",
                 "The number of events to skip on file open", 0 } ;
 
-    Property<std::vector<std::string>> _readCollectionNames {this, "LCIOReadCollectionNames",
+    StringVectorParameter _readCollectionNames {*this, "LCIOReadCollectionNames",
                 "An optional list of LCIO collections to read from event" } ;
 
-    Property<bool> _lazyUnpack {this, "LazyUnpack",
+    BoolParameter _lazyUnpack {*this, "LazyUnpack",
                 "Set to true to perform a lazy unpacking after reading out an event", false } ;
 
     ///< The LCIO file listener
@@ -72,12 +72,13 @@ namespace marlin {
 
   LCIOFileSource::LCIOFileSource() :
     DataSourcePlugin("LCIO") {
-    _description = "Read LCIO events and run headers from files on disk" ;
+    setComponentDescription( "Read LCIO events and run headers from files on disk" ) ;
   }
 
   //--------------------------------------------------------------------------
 
-  void LCIOFileSource::init() {
+  void LCIOFileSource::initComponent() {
+    DataSourcePlugin::initComponent() ;
     auto flag = FileReader::directAccess ;
     if( _lazyUnpack ) {
       flag |= FileReader::lazyUnpack ;
@@ -91,17 +92,17 @@ namespace marlin {
     }
     _fileReader->open( _inputFileNames ) ;
     if ( _skipNEvents > 0 ) {
-      logger()->log<WARNING>() << " --- Will skip first " << _skipNEvents << " event(s)" << std::endl ;
+      log<WARNING>() << " --- Will skip first " << _skipNEvents << " event(s)" << std::endl ;
       _fileReader->skipNEvents( _skipNEvents ) ;
     }
     if ( not _readCollectionNames.empty() ) {
-      logger()->log<WARNING>()
+      log<WARNING>()
         << " *********** Parameter LCIOReadCollectionNames given - will only read the following collections: **** "
         << std::endl ;
       for( auto collection : _readCollectionNames ) {
-        logger()->log<WARNING>()  << "     " << collection << std::endl ;
+        log<WARNING>()  << "     " << collection << std::endl ;
       }
-      logger()->log<WARNING>()
+      log<WARNING>()
         << " *************************************************************************************************** " << std::endl ;
       _fileReader->setReadCollectionNames( _readCollectionNames ) ;
     }
@@ -123,7 +124,7 @@ namespace marlin {
     return true ;
   }
 
-  MARLIN_DECLARE_DATASOURCE_NAME( LCIOFileSource, "LCIO" )
+  MARLIN_DECLARE_PLUGIN( LCIOFileSource )
 
 }
 
