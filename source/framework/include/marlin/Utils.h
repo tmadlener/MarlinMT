@@ -567,6 +567,28 @@ namespace marlin {
       std::transform( str.begin(), str.end(), str.begin(), [](unsigned char c) { return std::tolower( c ) ; } ) ;
     }
     
+    //--------------------------------------------------------------------------
+    
+    template <typename T>
+    inline T getenv( const std::string &var ) {
+      auto env = ::getenv( var.c_str() ) ;
+      if( nullptr == env ) {
+        MARLIN_THROW( var + " env variable is not set" ) ;
+      }
+      return details::convert<T>::from_string( env ) ;
+    }
+    
+    //--------------------------------------------------------------------------
+    
+    template <typename T>
+    inline T getenv( const std::string &var, const T &defVal ) {
+      auto env = ::getenv( var.c_str() ) ;
+      if( nullptr == env ) {
+        return defVal ;
+      }
+      return details::convert<T>::from_string( env ) ;
+    }
+    
   }
 
 } // end namespace marlin
