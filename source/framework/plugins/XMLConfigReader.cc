@@ -217,7 +217,7 @@ namespace marlin {
     // parse bookstore section
     parseSection(rootElement, "bookstore", cfg, true, false) ;
     // parse scheduler section
-    parseSection(rootElement, "scheduler", cfg, true, true) ;
+    parseSection(rootElement, "scheduler", cfg, true, false) ;
     // parse data source section
     parseSection(rootElement, "datasource", cfg, true, true) ;
     // parse logging section
@@ -358,6 +358,9 @@ namespace marlin {
   
   void XMLConfigReader::parseConstants( TiXmlDocument *idoc, Configuration &cfg ) const {
     TiXmlElement *constantsElement = idoc->RootElement()->FirstChildElement("constants") ;
+    if( nullptr == constantsElement ) {
+      return ;
+    }
     TiXmlElement *previous(nullptr), *child(nullptr) ;
     while(1) {
       if( nullptr == child ) {
