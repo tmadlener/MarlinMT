@@ -20,7 +20,7 @@ namespace marlin {
   std::vector<std::string> CmdLineParser::getStandardOptions() const {
     return { "-c", "--config", 
       "-x", "--example", 
-      "-j", "nthreads",
+      "-j", "--nthreads",
       "--help", "--version" };
   }
   
