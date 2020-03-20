@@ -2,6 +2,8 @@
 // -- marlin headers
 #include <marlin/Configuration.h>
 #include <marlin/CmdLineParser.h>
+#include <marlin/PluginManager.h>
+#include <marlin/Logging.h>
 #include <marlin/Utils.h>
 
 // -- std headers
@@ -30,6 +32,14 @@ int main(int argc, char** argv ) {
   }
 
   try {
+    // load plugins first
+    auto &mgr = PluginManager::instance() ;
+    mgr.logger()->setLevel<SILENT>() ;
+    auto libraries = details::split_string<std::string>(
+      details::getenv<std::string>( "MARLIN_DLL", "" ), ":" 
+    );
+    mgr.loadLibraries( libraries ) ;
+    
     // parse the command line in relax mode
     CmdLineParser parser ;
     parser.setOptionalArgs( true ) ;
@@ -82,7 +92,8 @@ int main(int argc, char** argv ) {
       std::cout << opt << std::endl ;
     }
   }
-  catch(...) {
+  catch(std::exception &e) {
+    std::cerr << "Caught exception: " << e.what() << std::endl ;
     return 1 ;
   }  
 }
