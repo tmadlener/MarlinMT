@@ -40,29 +40,36 @@ namespace marlin {
     /**
      *  @brief  Get the component name
      */
-    const std::string &componentType() const ;
+    const std::string &type() const ;
     
     /**
      *  @brief  Get the component name
      */
-    const std::string &componentName() const ;
+    const std::string &name() const ;
     
     /**
      *  @brief  Set the component name
      *  
-     *  @param  name the component name
+     *  @param  n the component name
      */
-    void setComponentName( const std::string &name ) ;
+    void setName( const std::string &n ) ;
     
     /**
      *  @brief  Get the component description
      */
-    const std::string &componentDescription() const ;
+    const std::string &description() const ;
+    
+    /**
+     *  @brief  Set the component description
+     *
+     *  @param  desc the component description
+     */
+    void setDescription( const std::string &desc ) ;
     
     /**
      *  @brief  Initialize the component
      */
-    virtual void initComponent() { /* nop */ }
+    virtual void initialize() { /*nop*/ }
     
     /**
      *  @brief  Get the application in which the component is registered
@@ -116,7 +123,12 @@ namespace marlin {
      */
     bool isInitialized() const ;
     
-    /// Setup the component. Called by the application before initialization
+    /**
+     *  @brief  Setup the component. 
+     *  Called by the application before initialization
+     * 
+     *  @param  app the application owning the component
+     */
     void setup( Application *app ) ;
     
     /**
@@ -129,20 +141,14 @@ namespace marlin {
      */
     template <class T>
     void printParameters() const ;
-    
-  protected:
-    /**
-     *  @brief  Get the component description
-     */
-    void setComponentDescription( const std::string &description ) ;
         
   protected:
     /// The component type
-    std::string              _componentType {} ;
+    std::string              _type {} ;
     /// The component name
-    std::string              _componentName {} ;
+    std::string              _name {} ;
     /// The component description
-    std::string              _componentDescription {} ;
+    std::string              _description {"No description"} ;
     /// The application in which the component has been registered
     Application             *_application {nullptr} ;
     /// The logger instance
@@ -156,7 +162,7 @@ namespace marlin {
   
   template <class T>
   void Component::printParameters() const {
-    log<T>() << componentName() << " [" << componentType() << "] parameters:" << std::endl ;
+    log<T>() << name() << " [" << type() << "] parameters:" << std::endl ;
     for( auto iter : _parameters ) {
       log<T>() << iter.first << "(" << iter.second->typeStr() << "): " << iter.second->str() << std::endl ;
     }

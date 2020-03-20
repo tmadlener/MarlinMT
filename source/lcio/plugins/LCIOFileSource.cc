@@ -36,7 +36,7 @@ namespace marlin {
     ~LCIOFileSource() = default ;
 
     // from base
-    void initComponent() override ;
+    void initialize() override ;
     bool readOne() override ;
 
   private:
@@ -71,14 +71,14 @@ namespace marlin {
   //--------------------------------------------------------------------------
 
   LCIOFileSource::LCIOFileSource() :
-    DataSourcePlugin("LCIO") {
-    setComponentDescription( "Read LCIO events and run headers from files on disk" ) ;
+    DataSourcePlugin("LCIOReader") {
+    setDescription( "Read LCIO events and run headers from files on disk" ) ;
   }
 
   //--------------------------------------------------------------------------
 
-  void LCIOFileSource::initComponent() {
-    DataSourcePlugin::initComponent() ;
+  void LCIOFileSource::initialize() {
+    DataSourcePlugin::initialize() ;
     auto flag = FileReader::directAccess ;
     if( _lazyUnpack ) {
       flag |= FileReader::lazyUnpack ;
@@ -124,7 +124,7 @@ namespace marlin {
     return true ;
   }
 
-  MARLIN_DECLARE_PLUGIN( LCIOFileSource )
+  MARLIN_DECLARE_PLUGIN_NAME( LCIOFileSource, "LCIOReader" )
 
 }
 

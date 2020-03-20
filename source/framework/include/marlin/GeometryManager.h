@@ -30,9 +30,6 @@ namespace marlin {
      */
     GeometryManager() ;
 
-    /// Initialize geometry manager
-    void initComponent() override ;
-
     /**
      *  @brief  Get the underlying geometry handle
      *  Example:
@@ -56,6 +53,10 @@ namespace marlin {
      *  @brief  Clear the geometry content
      */
     void clear() ;
+    
+  private:
+    /// Initialize geometry manager
+    void initialize() override ;
 
   private:
     /// The geometry plugin created on initialization

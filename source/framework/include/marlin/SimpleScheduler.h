@@ -21,7 +21,7 @@ namespace marlin {
     SimpleScheduler() ;
 
     // from IScheduler interface
-    void initComponent() override ;
+    void initialize() override ;
     void end() override ;
     void processRunHeader( std::shared_ptr<RunHeader> rhdr ) override ;
     void pushEvent( std::shared_ptr<EventStore> event ) override ;

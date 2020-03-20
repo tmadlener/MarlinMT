@@ -7,14 +7,14 @@ namespace marlin {
 
   LoggerManager::LoggerManager() : 
     Component("LoggerManager") {
-    setComponentDescription( "The logger manager manages all the logging facility whithin the application" ) ;
+    setDescription( "The logger manager manages all the logging facility whithin the application" ) ;
     // temporary name before initialization
     mainLogger()->setName( "main" ) ;
   }
 
   //--------------------------------------------------------------------------
 
-  void LoggerManager::initComponent() {
+  void LoggerManager::initialize() {
     auto config = application().configuration() ;
     if( config.hasSection("logging") ) {
       setParameters( config.section("logging") ) ;

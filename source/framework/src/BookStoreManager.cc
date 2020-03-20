@@ -44,7 +44,7 @@ namespace marlin {
   
   BookStoreManager::BookStoreManager() :
     Component("BookStoreManager") {
-    setComponentName("BookStore") ;
+    setName("BookStore") ;
   }
   
   //--------------------------------------------------------------------------
@@ -56,7 +56,7 @@ namespace marlin {
 
   //--------------------------------------------------------------------------
   
-  void BookStoreManager::initComponent() {
+  void BookStoreManager::initialize() {
     auto &config = application().configuration() ;
     if( config.hasSection("bookstore") ) {
       const auto &section = config.section("bookstore") ;

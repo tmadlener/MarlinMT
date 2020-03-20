@@ -7,18 +7,12 @@ namespace marlin {
 
   Processor::Processor( const std::string& typeName ) :
     Component( typeName ) {
-    setDescription("Description not set by author ") ;
+    /* nop */
   }
-  
+    
   //--------------------------------------------------------------------------
   
-  void Processor::setDescription( const std::string &description ) {
-    setComponentDescription( description ) ;
-  }
-  
-  //--------------------------------------------------------------------------
-  
-  void Processor::initComponent() {
+  void Processor::initialize() {
     auto &config = application().configuration() ;
     auto &section = config.section("processors") ;
     if( section.hasSection( name() ) ) {

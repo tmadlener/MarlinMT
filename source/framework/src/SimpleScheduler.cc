@@ -14,14 +14,14 @@ namespace marlin {
   
   SimpleScheduler::SimpleScheduler() :
     IScheduler() {
-    setComponentName( "SimpleScheduler" ) ;
+    setName( "SimpleScheduler" ) ;
   }
   
   //--------------------------------------------------------------------------
 
-  void SimpleScheduler::initComponent() {
+  void SimpleScheduler::initialize() {
     // base init
-    IScheduler::initComponent() ;
+    IScheduler::initialize() ;
     auto &config = application().configuration() ;
     auto &execSection = config.section("execute") ;
     auto &procsSection = config.section("processors") ;

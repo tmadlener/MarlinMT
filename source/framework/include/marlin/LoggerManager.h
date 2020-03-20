@@ -35,7 +35,7 @@ namespace marlin {
     /**
      *  @brief  Initialize the logger manager
      */
-    void initComponent() override ;
+    void initialize() override ;
 
     /**
      *  @brief  Get the main logger instance (not the global one)

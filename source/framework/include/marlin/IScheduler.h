@@ -31,7 +31,7 @@ namespace marlin {
      *  @brief  Initialize the scheduler. 
      *  Read the config section from the configuration 
      */
-    virtual void initComponent() override ;
+    virtual void initialize() override ;
 
     /**
      *  @brief  Terminate the scheduler activites

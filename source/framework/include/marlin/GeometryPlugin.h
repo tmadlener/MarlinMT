@@ -64,55 +64,18 @@ namespace marlin {
     virtual void dumpGeometry() const = 0 ;
 
     /**
-     *  @brief  Get the geometry description.
-     *  Can be set by sub-classes in constructor (protected)
-     */
-    const std::string &description() const ;
-
-    /**
-     *  @brief  Get the geometry type
-     */
-    const std::string &type() const ;
-
-    /**
      *  @brief  Print the complete geometry plugin description.
      */
     void print() const ;
     
   protected:
     /// Init the geometry plugin
-    virtual void initComponent() override ; 
-    
-    /**
-     *  @brief  Set the geometry description.
-     *
-     *  @param  desc a short plugin description
-     */
-    void setDescription( const std::string &desc ) ;
+    virtual void initialize() override ; 
 
   protected:
     /// Whether to dump the geometry on creation
     BoolParameter       _dumpGeometry {*this, "DumpGeometry", "Whether to dump the geometry on creation", false} ;
   };
-
-  //--------------------------------------------------------------------------
-  //--------------------------------------------------------------------------
-
-  inline const std::string &GeometryPlugin::description() const {
-    return componentDescription() ;
-  }
-
-  //--------------------------------------------------------------------------
-
-  inline const std::string &GeometryPlugin::type() const {
-    return componentName() ;
-  }
-  
-  //--------------------------------------------------------------------------
-  
-  inline void GeometryPlugin::setDescription( const std::string &desc ) {
-    setComponentDescription( desc ) ;
-  }
 
 } // end namespace marlin
 

@@ -93,7 +93,7 @@ namespace marlin {
     void processEvent( std::shared_ptr<EventStore> event ) ;
     
     /// Init data source
-    virtual void initComponent() override ;
+    virtual void initialize() override ;
 
   protected:
     ///< The data source description

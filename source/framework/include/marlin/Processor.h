@@ -66,9 +66,9 @@ namespace marlin {
     /**
      *  @brief  Constructor. Subclasses need to call this in their default constructor.
      *
-     *  @param  typeName the processor type
+     *  @param  t the processor type
      */
-    Processor(const std::string& typeName) ;
+    Processor( const std::string& t ) ;
 
     /**
      *  @brief  Initialize the processor.
@@ -95,21 +95,6 @@ namespace marlin {
      *  for all following processors.
      */
     virtual void end() { /* nop */ }
-
-    /**
-     *  @brief  Return type name for the processor (as set in constructor).
-     */
-    const std::string &type() const ;
-
-    /**
-     *  @brief  Return the name of this processor.
-     */
-    const std::string &name() const ;
-    
-    /**
-     *  @brief  Return the processor description
-     */
-    const std::string &description() const ;
 
     /**
      *  @brief  Get the forced runtime option settings.
@@ -148,41 +133,14 @@ namespace marlin {
      */
     void setRuntimeOption( ERuntimeOption option, bool value ) ;
     
-    /**
-     *  @brief  Set the processor description.
-     *  Alias of setComponentDescription()
-     *  
-     *  @param  description the processor description
-     */
-    void setDescription( const std::string &description ) ;
-    
   private:
     /// From Component class
-    void initComponent() override ;
+    void initialize() override ;
 
   private:
     /// The user forced runtime options for parallel processing
     RuntimeOptions                     _forcedRuntimeOptions {} ;
   };
-
-  //--------------------------------------------------------------------------
-  //--------------------------------------------------------------------------
-
-  inline const std::string &Processor::type() const {
-    return componentType() ;
-  }
-
-  //--------------------------------------------------------------------------
-
-  inline const std::string &Processor::name() const {
-    return componentName() ;
-  }
-  
-  //--------------------------------------------------------------------------
-
-  inline const std::string &Processor::description() const {
-    return componentDescription() ;
-  }
 
 } // end namespace marlin
 

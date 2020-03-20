@@ -14,18 +14,6 @@ namespace marlin {
 
   //--------------------------------------------------------------------------
 
-  const std::string &DataSourcePlugin::type() const {
-    return componentName() ;
-  }
-
-  //--------------------------------------------------------------------------
-
-  const std::string &DataSourcePlugin::description() const {
-    return _description ;
-  }
-
-  //--------------------------------------------------------------------------
-
   void DataSourcePlugin::readAll() {
     while( readOne() ) ;
   }
@@ -62,7 +50,7 @@ namespace marlin {
   
   //--------------------------------------------------------------------------
   
-  void DataSourcePlugin::initComponent() {
+  void DataSourcePlugin::initialize() {
     auto &config = application().configuration() ;
     if( config.hasSection("datasource") ) {
       setParameters( config.section("datasource") ) ;

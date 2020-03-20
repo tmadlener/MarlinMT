@@ -35,7 +35,7 @@ namespace marlin {
     void writeToDisk() const ;
     
     /// Initialize the book store manager
-    void initComponent() override ;
+    void initialize() override ;
     
     /**
      *  @brief  Book  a histogram 1D, float type

@@ -1,9 +1,6 @@
-#ifndef MARLIN_STDHEPFILESOURCE_h
-#define MARLIN_STDHEPFILESOURCE_h 1
-
-#include <marlin/lcio/ReaderListener.h>
 
 // -- marlin headers
+#include <marlin/lcio/ReaderListener.h>
 #include <marlin/DataSourcePlugin.h>
 #include <marlin/PluginManager.h>
 #include <marlin/Logging.h>
@@ -35,17 +32,17 @@ namespace marlin {
     ~StdHepFileSource() = default ;
 
     // from DataSourcePlugin
-    void init() ;
-    bool readOne() ;
+    void initialize() override ;
+    bool readOne() override ;
 
   private:
-    Property<std::string> _fileName {this, "StdHepFileName",
+    StringParameter _fileName {*this, "StdHepFileName",
             "The StdHep input file name" } ;
 
-    Property<int> _maxRecordNumber {this, "MaxRecordNumber",
+    IntParameter _maxRecordNumber {*this, "MaxRecordNumber",
             "The maximum number of events to read", 0 } ;
 
-    Property<std::string> _collectionName {this, "CollectionName",
+    StringParameter _collectionName {*this, "CollectionName",
             "The name of the MCParticle collection to add in the event", "MCParticle" } ;
 
     ///< The stdhep file reader
@@ -60,13 +57,14 @@ namespace marlin {
   //--------------------------------------------------------------------------
 
   StdHepFileSource::StdHepFileSource() :
-    DataSourcePlugin("StdHep") {
-    _description = "Reads StdHep files as input and creates LCIO events with MCParticle collections" ;
+    DataSourcePlugin("StdHepReader") {
+    setDescription( "Reads StdHep files as input and creates LCIO events with MCParticle collections" ) ;
   }
 
   //--------------------------------------------------------------------------
 
-  void StdHepFileSource::init() {
+  void StdHepFileSource::initialize() {
+    DataSourcePlugin::initialize() ;
     // create the file reader
     _fileReader = std::make_shared<FileReader::element_type>( _fileName.get().c_str() ) ;
   }
@@ -111,8 +109,6 @@ namespace marlin {
     return true ;
   }
 
-  MARLIN_DECLARE_DATASOURCE_NAME( StdHepFileSource, "StdHep" )
+  MARLIN_DECLARE_PLUGIN_NAME( StdHepFileSource, "StdHepReader" )
 
 }
-
-#endif

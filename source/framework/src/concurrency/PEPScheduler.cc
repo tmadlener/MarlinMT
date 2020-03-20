@@ -73,9 +73,16 @@ namespace marlin {
     //--------------------------------------------------------------------------
     //--------------------------------------------------------------------------
 
-    void PEPScheduler::initComponent() {
+    PEPScheduler::PEPScheduler() :
+      IScheduler() {
+      setName( "PEPScheduler" ) ;
+    }
+    
+    //--------------------------------------------------------------------------
+
+    void PEPScheduler::initialize() {
       // base init
-      IScheduler::initComponent() ;
+      IScheduler::initialize() ;
       preConfigure() ;
       configureProcessors() ;
       configurePool() ;

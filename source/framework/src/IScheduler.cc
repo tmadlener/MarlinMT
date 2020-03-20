@@ -12,7 +12,7 @@ namespace marlin {
   
   //--------------------------------------------------------------------------
 
-  void IScheduler::initComponent() {
+  void IScheduler::initialize() {
     auto &config = application().configuration() ;
     if( config.hasSection("scheduler") ) {
       setParameters( config.section("scheduler") ) ;

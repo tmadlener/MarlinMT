@@ -6,40 +6,40 @@
 namespace marlin {
   
   Component::Component( const std::string &type ) :
-    _componentType(type),
-    _componentName(details::convert<void*>::to_string(this)) {
-    _logger = Logging::createLogger( _componentType + "_" + _componentName ) ;
+    _type(type),
+    _name(details::convert<void*>::to_string(this)) {
+    _logger = Logging::createLogger( this->type() + "_" + this->name() ) ;
     _logger->setLevel( "MESSAGE" ) ;
   }
   
   //--------------------------------------------------------------------------
   
-  const std::string &Component::componentType() const {
-    return _componentType ;
+  const std::string &Component::type() const {
+    return _type ;
   }
   
   //--------------------------------------------------------------------------
   
-  const std::string &Component::componentName() const {
-    return _componentName ;
+  const std::string &Component::name() const {
+    return _name ;
   }
   
   //--------------------------------------------------------------------------
   
-  void Component::setComponentName( const std::string &name ) {
-    _componentName = name ;
+  void Component::setName( const std::string &n ) {
+    _name = n ;
   }
   
   //--------------------------------------------------------------------------
   
-  const std::string &Component::componentDescription() const {
-    return _componentDescription ;
+  const std::string &Component::description() const {
+    return _description ;
   }
   
   //--------------------------------------------------------------------------
   
-  void Component::setComponentDescription( const std::string &description ) {
-    _componentDescription = description ;
+  void Component::setDescription( const std::string &desc ) {
+    _description = desc ;
   }
   
   //--------------------------------------------------------------------------
@@ -100,14 +100,14 @@ namespace marlin {
   
   void Component::setup( Application *app ) {
     _application = app ;
-    _logger = application().createLogger( _componentName ) ;
+    _logger = application().createLogger( _name ) ;
     if( _verbosity.isSet() ) {
       _logger->setLevel( _verbosity.get() ) ;
     }
     message() << "----------------------------------------------------------" << std::endl ;
-    message() << "Component type: '" << componentType() << "', name: '" << componentName() << "'" << std::endl ;
-    message() << componentDescription() << std::endl ;
-    initComponent() ;
+    message() << "Component type: '" << type() << "', name: '" << name() << "'" << std::endl ;
+    message() << description() << std::endl ;
+    initialize() ;
     message() << "----------------------------------------------------------" << std::endl ;
   }
   

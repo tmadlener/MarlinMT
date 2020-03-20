@@ -8,12 +8,12 @@ namespace marlin {
 
   GeometryManager::GeometryManager() :
     Component( "GeometryManager" ) {
-    setComponentName( "Geometry" ) ;
+    setName( "Geometry" ) ;
   }
 
   //--------------------------------------------------------------------------
 
-  void GeometryManager::initComponent() {
+  void GeometryManager::initialize() {
     auto &config = application().configuration() ;
     if( config.hasSection("geometry") ) {
       const auto &section = config.section("geometry") ;

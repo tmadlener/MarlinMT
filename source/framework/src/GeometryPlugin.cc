@@ -7,7 +7,8 @@
 namespace marlin {
 
   GeometryPlugin::GeometryPlugin( const std::string &gtype ) :
-    Component(gtype) {
+    Component("Geometry") {
+    setName( gtype ) ;
   }
 
   //--------------------------------------------------------------------------
@@ -15,7 +16,7 @@ namespace marlin {
   void GeometryPlugin::print() const {
     auto typeidx = typeIndex() ;
     message() << "----------------------------------------------------------" << std::endl ;
-    message() << "-- Geometry plugin: " << type() << std::endl ;
+    message() << "-- Geometry plugin: " << name() << std::endl ;
     message() << "-- Description: " << description() << std::endl ;
     message() << "-- Handle at: " << handle() << std::endl ;
     message()  << "-- Type index: " << std::endl ;
@@ -31,7 +32,7 @@ namespace marlin {
   
   //--------------------------------------------------------------------------
   
-  void GeometryPlugin::initComponent() {
+  void GeometryPlugin::initialize() {
     auto &config = application().configuration() ;
     if( config.hasSection("geometry") ) {
       setParameters( config.section("geometry") ) ;
