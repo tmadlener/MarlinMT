@@ -548,7 +548,7 @@ namespace marlin {
      *  @param  desc the parameter description
      *  @param  defVal the parameter default value
      */
-    inline VectorParameter( const std::string &na, const std::string &desc, const T &defVal ) :
+    inline VectorParameter( const std::string &na, const std::string &desc, const std::vector<T> &defVal ) :
       Base( EParameterType::eVector, na, desc, defVal ) {
       /* nop */
     }
@@ -573,7 +573,7 @@ namespace marlin {
      *  @param  desc the parameter description
      *  @param  defVal the parameter default value
      */
-    inline VectorParameter( Configurable &conf, const std::string &na, const std::string &desc, const T &defVal ) :
+    inline VectorParameter( Configurable &conf, const std::string &na, const std::string &desc, const std::vector<T> &defVal ) :
       Base( conf, EParameterType::eVector, na, desc, defVal ) {
       /* nop */
     }
