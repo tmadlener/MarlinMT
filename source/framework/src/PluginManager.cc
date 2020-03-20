@@ -78,13 +78,22 @@ namespace marlin {
 
   void PluginManager::dump() const {
     lock_type lock( _mutex ) ;
+    std::map<std::string, std::vector<std::string>> pluginMap ;
     _logger->log<MESSAGE>() << "------------------------------------" << std::endl ;
     _logger->log<MESSAGE>() << " ** Marlin plugin manager dump ** " << std::endl ;
     if( _pluginFactories.empty() ) {
       _logger->log<MESSAGE>() << " No plugin entry !" << std::endl ;
     }
-    for ( auto iter : _pluginFactories ) {
-      _logger->log<MESSAGE>() << " - " << iter.first << " [" << iter.second._libraryName << "]" << std::endl ;
+    else {
+      for ( auto iter : _pluginFactories ) {
+        pluginMap[iter.second._libraryName].push_back( iter.first ) ;
+      }
+      for ( auto iter : pluginMap ) {
+        _logger->log<MESSAGE>() << "Library: " << iter.first << std::endl ;
+        for( auto p : iter.second ) {
+          _logger->log<MESSAGE>() << " - " << p << std::endl ;        
+        }
+      }
     }
     _logger->log<MESSAGE>() << "----------------------------------" << std::endl ;
   }
