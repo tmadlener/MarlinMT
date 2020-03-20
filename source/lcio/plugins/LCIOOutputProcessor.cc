@@ -81,19 +81,19 @@ namespace marlin {
     std::set<std::string> getWriteCollections( EVENT::LCEvent * evt ) const ;
 
   private:
-    Property<std::string> _lcioOutputFile {this, "LCIOOutputFile",
+    StringParameter _lcioOutputFile {*this, "LCIOOutputFile",
              "Name of the LCIO output file", "outputfile.slcio" } ;
 
-    Property<std::string> _lcioWriteMode {this, "LCIOWriteMode",
+    StringParameter _lcioWriteMode {*this, "LCIOWriteMode",
              "Write mode for output file:  WRITE_APPEND, WRITE_NEW or None", "None" } ;
 
-    OptionalProperty<std::vector<std::string>> _dropCollectionNames {this, "DropCollectionNames" ,
+    StringVectorParameter _dropCollectionNames {*this, "DropCollectionNames" ,
              "drops the named collections from the event", {"TPCHits", "HCalHits"} } ;
 
-    OptionalProperty<std::vector<std::string>> _dropCollectionTypes {this, "DropCollectionTypes" ,
+    StringVectorParameter _dropCollectionTypes {*this, "DropCollectionTypes" ,
              "drops all collections of the given type from the event", {"SimTrackerHit", "SimCalorimeterHit"} } ;
 
-    OptionalProperty<std::vector<std::string>> _keepCollectionNames {this, "KeepCollectionNames" ,
+    StringVectorParameter _keepCollectionNames {*this, "KeepCollectionNames" ,
              "force keep of the named collections - overrules DropCollectionTypes (and DropCollectionNames)", {"MyPreciousSimTrackerHits"} } ;
 
     // OptionalProperty<int> _splitFileSizekB {this, "SplitFileSizekB" ,
@@ -110,11 +110,11 @@ namespace marlin {
 
   LCIOOutputProcessor::LCIOOutputProcessor() :
     Processor("LCIOOutputProcessor") {
-    _description = "Writes the current event to the specified LCIO outputfile." ;
+    setDescription( "Writes the current event to the specified LCIO outputfile." ) ;
     // no lock, the writer implementation is thread safe
-    forceRuntimeOption( Processor::RuntimeOption::Critical, false ) ;
+    setRuntimeOption( Processor::ERuntimeOption::eCritical, false ) ;
     // don't duplicate opening/writing of output file
-    forceRuntimeOption( Processor::RuntimeOption::Clone, false ) ;
+    setRuntimeOption( Processor::ERuntimeOption::eClone, false ) ;
   }
 
   //--------------------------------------------------------------------------
@@ -140,30 +140,30 @@ namespace marlin {
     rhdr->setRunNumber( run->runNumber() ) ;
     rhdr->setDetectorName( run->detectorName() ) ;
     rhdr->setDescription( run->description() ) ;
-    auto activeSubdets = run->parameters().getValues<std::string>( "ActiveSubdetectors" ) ;
+    auto activeSubdets = run->parameter<std::vector<std::string>>( "ActiveSubdetectors" ).value() ;
     for( auto &det : activeSubdets ) {
       rhdr->addActiveSubdetector( det ) ;
     }
-    auto intKeys = run->parameters().getValues<std::string>( "LCIntKeys" ) ;
-    auto floatKeys = run->parameters().getValues<std::string>( "LCFloatKeys" ) ;
-    auto strKeys = run->parameters().getValues<std::string>( "LCStrKeys" ) ;
-    auto keys = run->parameters().keys() ;
+    auto intKeys = run->parameter<std::vector<std::string>>( "LCIntKeys" ).value() ;
+    auto floatKeys = run->parameter<std::vector<std::string>>( "LCFloatKeys" ).value() ;
+    auto strKeys = run->parameter<std::vector<std::string>>( "LCStrKeys" ).value() ;
+    auto keys = details::keys( run->parameters() ) ;
     for( auto &key : keys ) {
       if( key == "ActiveSubdetectors" ) {
         continue ;
       }
       if( std::find( intKeys.begin(), intKeys.end(), key ) != intKeys.end() ) {
-        auto values = run->parameters().getValues<int>( key ) ;
+        auto values = run->parameter<std::vector<int>>( key ).value() ;
         rhdr->parameters().setValues( key, values ) ;
         continue ;
       }
       if( std::find( floatKeys.begin(), floatKeys.end(), key ) != floatKeys.end() ) {
-        auto values = run->parameters().getValues<float>( key ) ;
+        auto values = run->parameter<std::vector<float>>( key ).value() ;
         rhdr->parameters().setValues( key, values ) ;
         continue ;
       }
-      if( std::find( floatKeys.begin(), floatKeys.end(), key ) != floatKeys.end() ) {
-        auto values = run->parameters().getValues<float>( key ) ;
+      if( std::find( strKeys.begin(), strKeys.end(), key ) != strKeys.end() ) {
+        auto values = run->parameter<std::vector<std::string>>( key ).value() ;
         rhdr->parameters().setValues( key, values ) ;
         continue ;
       }
