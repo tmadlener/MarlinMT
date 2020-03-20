@@ -23,7 +23,7 @@ namespace marlin {
   //--------------------------------------------------------------------------
   
   std::string Exception::createMessage( unsigned int line, const std::string &func, const std::string &fname, const std::string &message ) const {
-    return fname + " (l." + std::to_string(line) + ") in " + func + ": " + message ;
+    return fname + " (l." + std::to_string(line) + ") \nin " + func + "\nmessage: " + message ;
   }
   
   //--------------------------------------------------------------------------
