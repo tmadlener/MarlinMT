@@ -72,6 +72,7 @@ namespace marlin {
 #endif
     using Logger = std::shared_ptr<streamlog::logstreamT<mutex_type>> ;
     using StreamType = Logger::element_type::stream_type ;
+    using DefaultLoggerType = streamlog::logstream::default_logger_type ;
 
   public:
     /**
@@ -80,15 +81,11 @@ namespace marlin {
      *  @param  name the logger name
      */
     static Logger createLogger( const std::string &name ) ;
-
+    
     /**
-     *  @brief  Create a new logger using the sinks from the application
-     *
-     *  @param  name the logger name
-     *  @param  app the application from which to get the sink
+     *  @brief  Get the global streamlog logger. Returns a reference
      */
-    // static Logger createLogger( const std::string &name , const Application &app ) ;
-
+    static DefaultLoggerType &globalLogger() ;
   };
 
 }
