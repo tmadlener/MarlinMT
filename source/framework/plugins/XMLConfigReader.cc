@@ -256,35 +256,40 @@ namespace marlin {
   //--------------------------------------------------------------------------
   
   void XMLConfigReader::parseExecuteSection( TiXmlElement *parentElement, Configuration &cfg ) const {
-    // parse execute section
-    auto executeElement = parentElement->FirstChildElement("execute") ;
-    if( nullptr == executeElement ) {
-      MARLIN_THROW_T( ParseException, "Missing <execute> section in " + _fname ) ;
-    }
-    replaceGroups( parentElement, executeElement ) ;
-    processConditions( executeElement, "" ) ;
-    TiXmlNode* proc = 0 ;
-    std::set<std::string> processorDuplicates {} ;
-    std::vector<std::string> processorConditions {}, processorNames {} ;
-    // create a section and subsections for storing the scheduling conditions 
-    auto &executeSection = cfg.createSection("execute") ;
-    while( ( proc = executeElement->IterateChildren( "processor", proc ) )  != 0  ) {
-      std::string processorName( getAttribute( proc->ToElement(), "name") ) ;
-      cfg.replaceConstants( processorName ) ;
-      auto inserted = processorDuplicates.insert( processorName ) ;
-      if( 1 != inserted.second ) {
-        MARLIN_THROW_T( ParseException, "Processor " + processorName + " defined more than once in <execute> section" ) ;
+    try {
+      // parse execute section
+      auto executeElement = parentElement->FirstChildElement("execute") ;
+      if( nullptr == executeElement ) {
+        MARLIN_THROW_T( ParseException, "Missing <execute> section in " + _fname ) ;
       }
-      processorNames.push_back( processorName ) ;
-      std::string condition( getAttribute( proc->ToElement(), "condition") ) ;
-      cfg.replaceConstants( condition ) ;
-      if( condition.empty() ) {
-        condition = "true" ;
+      replaceGroups( parentElement, executeElement ) ;
+      processConditions( executeElement, "" ) ;
+      TiXmlNode* proc = 0 ;
+      std::set<std::string> processorDuplicates {} ;
+      std::vector<std::string> processorConditions {}, processorNames {} ;
+      // create a section and subsections for storing the scheduling conditions 
+      auto &executeSection = cfg.createSection("execute") ;
+      while( ( proc = executeElement->IterateChildren( "processor", proc ) )  != 0  ) {
+        std::string processorName( getAttribute( proc->ToElement(), "name") ) ;
+        cfg.replaceConstants( processorName ) ;
+        auto inserted = processorDuplicates.insert( processorName ) ;
+        if( 1 != inserted.second ) {
+          MARLIN_THROW_T( ParseException, "Processor " + processorName + " defined more than once in <execute> section" ) ;
+        }
+        processorNames.push_back( processorName ) ;
+        std::string condition( getAttribute( proc->ToElement(), "condition") ) ;
+        cfg.replaceConstants( condition ) ;
+        if( condition.empty() ) {
+          condition = "true" ;
+        }
+        processorConditions.push_back( condition ) ;
       }
-      processorConditions.push_back( condition ) ;
+      for( std::size_t i=0 ; i<processorNames.size() ; i++ ) {
+        executeSection.setParameter( processorNames[i], processorConditions[i] ) ;
+      }      
     }
-    for( std::size_t i=0 ; i<processorNames.size() ; i++ ) {
-      executeSection.setParameter( processorNames[i], processorConditions[i] ) ;
+    catch(Exception &e) {
+      MARLIN_RETHROW( e, "Couldn't parse execute section" ) ;
     }
   }
   
@@ -347,11 +352,7 @@ namespace marlin {
     if( nullptr == attr ) {
       MARLIN_THROW_T( ParseException, "Missing attribute '" + name + "' in element <" + element->ValueStr() + "> in file " + _fname ) ;
     }
-    std::string attrStr = attr ;
-    if( attrStr.empty() ) {
-      MARLIN_THROW_T( ParseException, "Empty attribute '" + name + "' in element <" + element->ValueStr() + "> in file " + _fname ) ;
-    }
-    return attrStr ;
+    return attr ;
   }
   
   //--------------------------------------------------------------------------
@@ -400,34 +401,31 @@ namespace marlin {
   //--------------------------------------------------------------------------
   
   void XMLConfigReader::parseConstant( TiXmlElement* element, Configuration &cfg ) const {
-    // parse constant name
-    std::string name = getAttribute( element, "name" ) ;
-    // parse constant value
-    std::string value ;
-    if( element->Attribute("value") ) {
-      value = element->Attribute("value") ;
-    }
-    else {
-      if( element->FirstChild() ) {
-        value = element->FirstChild()->ValueStr() ;
+    try {
+      // parse constant name
+      std::string name = getAttribute( element, "name" ) ;
+      // parse constant value
+      std::string value ;
+      if( element->Attribute("value") ) {
+        value = element->Attribute("value") ;
       }
+      else {
+        if( element->FirstChild() ) {
+          value = element->FirstChild()->ValueStr() ;
+        }
+      }
+      // check if we have a replacement constant
+      auto replValue = getReplacementParameter( "constant." + name, cfg ) ;
+      if( replValue.has_value() ) {
+        // TODO missing handling of non-existing cmd line parameters
+        value = replValue.value() ;
+      }
+      cfg.replaceConstants( value ) ;
+      cfg.addConstant( name , value ) ;      
     }
-    // check if we have a replacement constant
-    auto replValue = getReplacementParameter( "constant." + name, cfg ) ;
-    if( replValue.has_value() ) {
-      // TODO missing handling of non-existing cmd line parameters
-      value = replValue.value() ;
+    catch(Exception &e) {
+      MARLIN_RETHROW( e, "Couldn't parse constant XML element" ) ;
     }
-    // auto iter = params.find( "constant" ) ;
-    // if( params.end() != iter ) {
-    //   auto valIter = iter->second.find( name ) ;
-    //   if( (iter->second.end() != valIter) && (not valIter->second.empty()) ) {
-    //     value = valIter->second ;
-    //     iter->second.erase( valIter ) ;
-    //   }
-    // }
-    cfg.replaceConstants( value ) ;
-    cfg.addConstant( name , value ) ;
   }
   
   //--------------------------------------------------------------------------
@@ -468,28 +466,33 @@ namespace marlin {
   //--------------------------------------------------------------------------
   
   void XMLConfigReader::processIncludeElement( TiXmlElement* element , const Configuration &cfg , TiXmlDocument &document ) const {
-    std::string ref = getAttribute( element, "ref" ) ;
-    cfg.replaceConstants( ref ) ;
-    std::filesystem::path filepath = ref ;
-    if( not filepath.has_stem() || filepath.extension() != ".xml" ) {
-      MARLIN_THROW_T( ParseException, "Invalid ref file name '" + ref + "' in element <" + element->ValueStr() + "/> in file " + _fname ) ;
+    try {
+      std::string ref = getAttribute( element, "ref" ) ;
+      cfg.replaceConstants( ref ) ;
+      std::filesystem::path filepath = ref ;
+      if( not filepath.has_stem() || filepath.extension() != ".xml" ) {
+        MARLIN_THROW_T( ParseException, "Invalid ref file name '" + ref + "' in element <" + element->ValueStr() + "/> in file " + _fname ) ;
+      }
+      // if the include ref is not absolute, then
+      // it is relative to the input file name
+      if( not filepath.is_absolute() ) {
+        auto idocdir = std::filesystem::path(_fname).parent_path() ;
+        filepath = idocdir / filepath ;
+      }
+      // load the include document and check for nested includes (not allowed for the time being)
+      bool loadOkay = document.LoadFile( filepath.string() ) ;
+      if( not loadOkay ) {      
+        std::stringstream str ;
+        str << "Couldn't load include document. Error in file [" << filepath
+            << ", row: " << document.ErrorRow() << ", col: " << document.ErrorCol() << "] : "
+            << document.ErrorDesc() ;
+        MARLIN_THROW_T( ParseException, str.str() ) ;
+      }
+      checkForNestedIncludes( &document ) ;
     }
-    // if the include ref is not absolute, then
-    // it is relative to the input file name
-    if( not filepath.is_absolute() ) {
-      auto idocdir = std::filesystem::path(_fname).parent_path() ;
-      filepath = idocdir / filepath ;
+    catch(Exception &e) {
+      MARLIN_RETHROW( e, "Couldn't process include element" ) ;
     }
-    // load the include document and check for nested includes (not allowed for the time being)
-    bool loadOkay = document.LoadFile( filepath.string() ) ;
-    if( not loadOkay ) {      
-      std::stringstream str ;
-      str << "Couldn't load include document. Error in file [" << filepath
-          << ", row: " << document.ErrorRow() << ", col: " << document.ErrorCol() << "] : "
-          << document.ErrorDesc() ;
-      MARLIN_THROW_T( ParseException, str.str() ) ;
-    }
-    checkForNestedIncludes( &document ) ;
   }
     
   //--------------------------------------------------------------------------
@@ -508,109 +511,123 @@ namespace marlin {
   //--------------------------------------------------------------------------
   
   void XMLConfigReader::parametersFromXMLElement( const TiXmlElement *element, const Configuration &cfg, ConfigSection &section, bool addAttributes ) const {
-    auto elementValue = element->ValueStr() ;
-    // Copy all XML element attributes to the parameter list
-    // e.g <element name="toto" type="tutu"/>
-    // two parameters called ElementName and ElementType will be added in the parameter list 
-    if( addAttributes ) {
-      elementValue[0] = std::toupper( elementValue[0], std::locale() ) ;
-      for(const TiXmlAttribute *attr = element->FirstAttribute() ; attr != nullptr ; attr = attr->Next()) {
-        std::string attrName = attr->Name() ;
-        attrName[0] = std::toupper( attrName[0], std::locale() ) ;
-        std::string attrValue = attr->ValueStr() ;
-        cfg.replaceConstants( attrValue ) ;
-        section.setParameter( elementValue + attrName, attrValue ) ;
-      }
-    }
-    for(const TiXmlElement *child = element->FirstChildElement("parameter") ; child ; child = child->NextSiblingElement("parameter")) {
-      auto parameterName = getAttribute( child, "name" ) ;
-      std::string parameterValue ;
-      // get the value from the attribute value or from the XML element content
-      try {
-        parameterValue = getAttribute( child->ToElement() , "value" ) ;
-      }
-      catch( ParseException& ) {
-        if( child->FirstChild() ) {
-          parameterValue = child->FirstChild()->ValueStr() ;          
+    try {
+      auto elementValue = element->ValueStr() ;
+      // Copy all XML element attributes to the parameter list
+      // e.g <element name="toto" type="tutu"/>
+      // two parameters called ElementName and ElementType will be added in the parameter list 
+      if( addAttributes ) {
+        elementValue[0] = std::toupper( elementValue[0], std::locale() ) ;
+        for(const TiXmlAttribute *attr = element->FirstAttribute() ; attr != nullptr ; attr = attr->Next()) {
+          std::string attrName = attr->Name() ;
+          attrName[0] = std::toupper( attrName[0], std::locale() ) ;
+          std::string attrValue = attr->ValueStr() ;
+          cfg.replaceConstants( attrValue ) ;
+          section.setParameter( elementValue + attrName, attrValue ) ;
         }
       }
-      // TODO: add treatment of command line parameters replacement
-      // ...
-      cfg.replaceConstants( parameterValue ) ;
-      section.setParameter( parameterName, parameterValue ) ;
-      // TODO: treatment of in/out types ? drop it?
+      for(const TiXmlElement *child = element->FirstChildElement("parameter") ; child ; child = child->NextSiblingElement("parameter")) {
+        auto parameterName = getAttribute( child, "name" ) ;
+        std::string parameterValue ;
+        // get the value from the attribute value or from the XML element content
+        try {
+          parameterValue = getAttribute( child->ToElement() , "value" ) ;
+        }
+        catch( ParseException& ) {
+          if( child->FirstChild() ) {
+            parameterValue = child->FirstChild()->ValueStr() ;          
+          }
+        }
+        // TODO: add treatment of command line parameters replacement
+        // ...
+        cfg.replaceConstants( parameterValue ) ;
+        section.setParameter( parameterName, parameterValue ) ;
+        // TODO: treatment of in/out types ? drop it?
+      }      
+    }
+    catch(Exception &e) {
+      MARLIN_RETHROW( e, "Couldn't parse parameters from XML section" ) ;
     }
   }
   
   //--------------------------------------------------------------------------
   
   void XMLConfigReader::processConditions( TiXmlNode* current, const std::string &aCondition ) const {
-
-    std::string condition ;
-    // put parentheses around compound expressions
-    if( aCondition.find('&') != std::string::npos  || aCondition.find('|') != std::string::npos ) {
-      condition = "(" + aCondition + ")" ;
-    }
-    else {
-      condition = aCondition ;
-    }
-    // Do it recursively
-    TiXmlNode* child = 0 ;
-    while( ( child = current->IterateChildren( "if" , child )  ) != 0 ) {
-      processConditions( child->ToElement() , getAttribute( child->ToElement(), "condition") ) ;
-    }
-    while( ( child = current->IterateChildren( "processor" , child )  ) != 0 ) {
-      if(  child->ToElement()->Attribute( "condition" ) == 0 ) {
-        child->ToElement()->SetAttribute( "condition", condition ) ;
-      } 
+    try {
+      std::string condition ;
+      // put parentheses around compound expressions
+      if( aCondition.find('&') != std::string::npos  || aCondition.find('|') != std::string::npos ) {
+        condition = "(" + aCondition + ")" ;
+      }
       else {
-        std::string cond( child->ToElement()->Attribute("condition") ) ;
-        if( cond.size() > 0 && not condition.empty() ) {
-          cond += " && " ;
+        condition = aCondition ;
+      }
+      // Do it recursively
+      TiXmlNode* child = 0 ;
+      while( ( child = current->IterateChildren( "if" , child )  ) != 0 ) {
+        processConditions( child->ToElement() , getAttribute( child->ToElement(), "condition") ) ;
+      }
+      while( ( child = current->IterateChildren( "processor" , child )  ) != 0 ) {
+        if(  child->ToElement()->Attribute( "condition" ) == 0 ) {
+          child->ToElement()->SetAttribute( "condition", condition ) ;
+        } 
+        else {
+          std::string cond( child->ToElement()->Attribute("condition") ) ;
+          if( cond.size() > 0 && not condition.empty() ) {
+            cond += " && " ;
+          }
+          cond += condition ;
+          child->ToElement()->SetAttribute( "condition", cond ) ;
         }
-        cond += condition ;
-        child->ToElement()->SetAttribute( "condition", cond ) ;
+        if( current->ValueStr() != "execute" ) {
+          // unless we are already in the top node (<execute/>) we have to move all processors up
+          TiXmlNode* parent = current->Parent() ;
+          std::shared_ptr<TiXmlNode> clone( child->Clone() ) ;
+          parent->InsertBeforeChild(  current , *clone ) ;
+        }
       }
+      // remove the current <if/> node
       if( current->ValueStr() != "execute" ) {
-        // unless we are already in the top node (<execute/>) we have to move all processors up
         TiXmlNode* parent = current->Parent() ;
-        std::shared_ptr<TiXmlNode> clone( child->Clone() ) ;
-        parent->InsertBeforeChild(  current , *clone ) ;
-      }
+        parent->RemoveChild( current ) ;
+      }      
     }
-    // remove the current <if/> node
-    if( current->ValueStr() != "execute" ) {
-      TiXmlNode* parent = current->Parent() ;
-      parent->RemoveChild( current ) ;
+    catch(Exception &e) {
+      MARLIN_RETHROW( e, "Couldn't process conditions in execute section" ) ;
     }
   }
   
   //--------------------------------------------------------------------------
   
   void XMLConfigReader::replaceGroups( TiXmlNode* processorsParent, TiXmlNode* section ) const {
-    TiXmlNode* child = 0 ;
-    TiXmlNode* nextChild = section->IterateChildren( child ) ;
-    while((child = nextChild) != 0) {
-      nextChild = section->IterateChildren(child) ;
-      if( child->ValueStr()  == "group" ) {
-        // find group definition in root node
-        auto groupName = getAttribute( child->ToElement(), "name") ;
-        TiXmlNode* group = findElement( processorsParent, "group", "name" , groupName ) ;
-        if( nullptr == group ) {
-          MARLIN_THROW_T( ParseException, "Group not found : " +  groupName ) ;
+    try {
+      TiXmlNode* child = 0 ;
+      TiXmlNode* nextChild = section->IterateChildren( child ) ;
+      while((child = nextChild) != 0) {
+        nextChild = section->IterateChildren(child) ;
+        if( child->ValueStr()  == "group" ) {
+          // find group definition in root node
+          auto groupName = getAttribute( child->ToElement(), "name") ;
+          TiXmlNode* group = findElement( processorsParent, "group", "name" , groupName ) ;
+          if( nullptr == group ) {
+            MARLIN_THROW_T( ParseException, "Group not found : " +  groupName ) ;
+          }
+          TiXmlNode* sub = 0 ;
+          while( ( sub = group->IterateChildren( "processor" , sub ) )  != 0  ){
+            // insert <processor/> tag
+            TiXmlElement item( "processor" ) ;
+            item.SetAttribute( "name",  getAttribute( sub->ToElement(), "name") ) ;
+            section->InsertBeforeChild( child , item ) ;
+          }
+          section->RemoveChild( child ) ;
+        } 
+        else if( child->ValueStr() == "if" ) {  // other element, e.g. <if></if>
+          replaceGroups( processorsParent, child ) ;
         }
-        TiXmlNode* sub = 0 ;
-        while( ( sub = group->IterateChildren( "processor" , sub ) )  != 0  ){
-          // insert <processor/> tag
-          TiXmlElement item( "processor" ) ;
-          item.SetAttribute( "name",  getAttribute( sub->ToElement(), "name") ) ;
-          section->InsertBeforeChild( child , item ) ;
-        }
-        section->RemoveChild( child ) ;
-      } 
-      else if( child->ValueStr() == "if" ) {  // other element, e.g. <if></if>
-        replaceGroups( processorsParent, child ) ;
-      }
+      }      
+    }
+    catch(Exception &e) {
+      MARLIN_RETHROW( e, "Couldn't replace groups in XML file" ) ;
     }
   }
   
