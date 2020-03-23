@@ -39,8 +39,9 @@ int main(int argc, char** argv ) {
       details::getenv<std::string>( "MARLIN_DLL", "" ), ":" 
     );
     mgr.loadLibraries( libraries ) ;
-    
+        
     // parse the command line in relax mode
+    Logging::globalLogger().setLevel<SILENT>();
     CmdLineParser parser ;
     parser.setOptionalArgs( true ) ;
     CmdLineParser::ParseResult parseResult = parser.parse( argc, argv ) ;
@@ -93,7 +94,6 @@ int main(int argc, char** argv ) {
     }
   }
   catch(std::exception &e) {
-    std::cerr << "Caught exception: " << e.what() << std::endl ;
     return 1 ;
   }  
 }
