@@ -51,12 +51,10 @@ namespace marlin {
     Logger createLogger( const std::string &name ) const ;
     
   private:
-    /// The main verbosity level
-    StringParameter         _verbosity {*this, "Verbosity", "The main verbosity level", "MESSAGE"} ;
     /// The name of the log file (optional)
     StringParameter         _logfile {*this, "Logfile", "The name of the log file", "" } ;
     /// Whether to use a colored console printout
-    BoolParameter           _coloredConsole {*this, "Logfile", "Whether to use a colored console printout", false } ;
+    BoolParameter           _coloredConsole {*this, "ColoredConsole", "Whether to use a colored console printout", false } ;
   };
 
 } // end namespace marlin

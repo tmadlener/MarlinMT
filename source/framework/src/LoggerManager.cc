@@ -30,7 +30,6 @@ namespace marlin {
       auto logfilename = _logfile.get() ;
       sinks.push_back( streamlog::logstream::simpleFile<Logging::mutex_type>( logfilename ) ) ;
     }
-    setVerbosity( _verbosity.get() ) ;
     mainLogger()->setName( application().programName() ) ;
     mainLogger()->setSinks( sinks ) ;
     streamlog::logstream::global().setName( application().programName() ) ;
