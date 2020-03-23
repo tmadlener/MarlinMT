@@ -104,11 +104,7 @@ namespace marlin {
     if( _verbosity.isSet() ) {
       _logger->setLevel( _verbosity.get() ) ;
     }
-    message() << "----------------------------------------------------------" << std::endl ;
-    message() << "Component type: '" << type() << "', name: '" << name() << "'" << std::endl ;
-    message() << description() << std::endl ;
     initialize() ;
-    message() << "----------------------------------------------------------" << std::endl ;
   }
   
   //--------------------------------------------------------------------------
