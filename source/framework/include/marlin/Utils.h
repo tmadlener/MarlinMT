@@ -14,6 +14,7 @@
 
 // -- marlin headers
 #include <marlin/Exceptions.h>
+#include <marlin/MarlinConfig.h>
 
 namespace marlin {
 
@@ -587,6 +588,24 @@ namespace marlin {
         return defVal ;
       }
       return details::convert<T>::from_string( env ) ;
+    }
+    
+    //--------------------------------------------------------------------------
+    
+    inline void print_banner( std::ostream &out ) {
+      out << std::endl ;
+      out << "    __  __            _ _       __  __ _______ " << std::endl ;
+      out << "   |  \\/  |          | (_)     |  \\/  |__   __|" << std::endl ;
+      out << "   | \\  / | __ _ _ __| |_ _ __ | \\  / |  | |   " << std::endl ;
+      out << "   | |\\/| |/ _` | '__| | | '_ \\| |\\/| |  | |   " << std::endl ;
+      out << "   | |  | | (_| | |  | | | | | | |  | |  | |   " << std::endl ;
+      out << "   |_|  |_|\\__,_|_|  |_|_|_| |_|_|  |_|  |_|   " << std::endl ;    
+      out << std::endl ;
+      out << "                Version: " << MARLIN_RELEASE << std::endl ;
+      out << std::endl ;
+      out << "                LICENCE: GPLv3 " << std::endl ;
+      out << "     Copyright (C), Marlin/MarlinMT Authors" << std::endl ;
+      out << std::endl ;
     }
     
   }
