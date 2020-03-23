@@ -16,50 +16,55 @@ namespace marlin {
   	public:
   		void failure(TCLAP::CmdLineInterface& c, TCLAP::ArgException& e) override { 
         std::string progName = c.getProgramName();
-        auto &logger = Logging::globalLogger() ;
-      	logger.log<ERROR>() << "PARSE ERROR: " << e.argId() << std::endl
+      	std::cerr << "PARSE ERROR: " << e.argId() << std::endl
       		      << "             " << e.error() << std::endl << std::endl;
-      	if ( c.hasHelpAndVersion() )
-      		{
-            
-      			logger.log<ERROR>() << "Brief USAGE: " << std::endl;
-            {
-              auto stream = logger.log<ERROR>() ;
-        			_shortUsage( c, stream );	              
-            }
-
-
-      			logger.log<ERROR>() << std::endl << "For complete USAGE and HELP type: " 
-      					  << std::endl << "   " << progName << " "
-      					  << TCLAP::Arg::nameStartString() << "help"
-      					  << std::endl << std::endl;
-      		}
-      	else
-      		usage(c);
-
-      	throw TCLAP::ExitException(1);
+      	if ( c.hasHelpAndVersion() ) {
+    			std::cerr << "Brief USAGE: " << std::endl;
+      		_shortUsage( c, std::cerr );	              
+    			std::cerr << std::endl << "For complete USAGE and HELP type: " 
+    					  << std::endl << "   " << progName << " "
+    					  << TCLAP::Arg::nameStartString() << "help"
+    					  << std::endl << std::endl;
+    		}
+      	else {
+      		usage(c) ;
+        }
+        MARLIN_RETHROW( e, "Command line parsing failed" ) ;
   		}
 
   		void usage(TCLAP::CmdLineInterface& c) override {
-        auto &logger = Logging::globalLogger() ;
-        logger.log<MESSAGE>() << std::endl << "USAGE: " << std::endl << std::endl; 
-        {
-          auto stream = logger.log<MESSAGE>() ;
-        	_shortUsage( c, stream );          
-        }
-      	logger.log<MESSAGE>() << std::endl << std::endl << "Where: " << std::endl << std::endl;
-        {
-          auto stream = logger.log<MESSAGE>() ;
-      	  _longUsage( c, stream );
-        }
-      	logger.log<MESSAGE>() << std::endl; 
+        version(c);
+        std::cout << std::endl << "USAGE: " << std::endl << std::endl; 
+        _shortUsage( c, std::cout );
+      	std::cout << std::endl << std::endl << "Where: " << std::endl << std::endl;
+      	_longUsage( c, std::cout );
+        std::cout << std::endl; 
+        std::cout << "Dynamic command line options:" << std::endl;
+        std::cout << std::endl ;
+        std::cout << "   --{section}.parameter=value" << std::endl ;
+        std::cout << "   --constant.name=value" << std::endl ;
+        std::cout << "   --{processor}.parameter=value" << std::endl ;
+        std::cout << std::endl ;
+        spacePrint( std::cout, "with {section} = datasource, logging, scheduler, geometry, bookstore, global", 75, 5, 17 ); 
+        spacePrint( std::cout, "with {processor} the name of a processor configuration section", 75, 5, 0 ); 
+        std::cout << std::endl ;
+        std::stringstream ss ;
+        ss << "Dynamic command line options may be specified in order to overwrite individual "
+        "configuration parameters, e.g:" ;
+        spacePrint( std::cout, ss.str(), 75, 5, 0 ); 
+        ss.str("");
+        std::cout << std::endl;
+        spacePrint( std::cout, c.getProgramName() + " -c config.xml \\", 75, 5, 0 ); 
+        spacePrint( std::cout,      "--logging.Verbosity=ERROR \\", 75, 8, 0 ); 
+        spacePrint( std::cout,      "--constant.Calibration=0.0087 \\", 75, 8, 0 ); 
+        spacePrint( std::cout,      "--MyProcessor.EnergyCut=0.42", 75, 8, 0 ); 
+      	std::cout << std::endl; 
   		}
 
   		void version(TCLAP::CmdLineInterface& c) override {
         std::string progName = c.getProgramName();
         std::string xversion = c.getVersion();
-        auto &logger = Logging::globalLogger() ;
-        logger.log<MESSAGE>() << std::endl << progName << "  version: " 
+        std::cout << std::endl << progName << "  version: " 
               << xversion << std::endl << std::endl;
   		}
   };

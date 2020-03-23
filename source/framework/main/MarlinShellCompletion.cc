@@ -25,13 +25,11 @@ void globParameters( const ConfigSection &section, std::vector<std::string> &par
  */
 int main(int argc, char** argv ) {
 
-  // ---- catch all uncaught exceptions in the end ...
-  if( argc < 2 ) {
-    // Return silently as this is used for shell completion
-    return 1 ;
-  }
-
   try {
+    // shut down cout and cerr
+    std::cout.setstate( std::ios_base::failbit ) ;
+    std::cerr.setstate( std::ios_base::failbit ) ;
+    
     // load plugins first
     auto &mgr = PluginManager::instance() ;
     mgr.logger()->setLevel<SILENT>() ;
@@ -41,21 +39,39 @@ int main(int argc, char** argv ) {
     mgr.loadLibraries( libraries ) ;
         
     // parse the command line in relax mode
-    Logging::globalLogger().setLevel<SILENT>();
     CmdLineParser parser ;
     parser.setOptionalArgs( true ) ;
-    CmdLineParser::ParseResult parseResult = parser.parse( argc, argv ) ;
+    CmdLineParser::ParseResult parseResult {} ;
+        
+    // 1 - Get command line options
+    auto cmdLineOpts = parser.getStandardOptions() ;
+
+    try {
+      parseResult = parser.parse( argc, argv ) ;      
+    }
+    catch(...) {
+      std::cout.clear() ;
+      std::cerr.clear() ;
+      for( auto &opt : cmdLineOpts ) {
+        std::cout << opt << std::endl ;
+      }
+      return 0 ;      
+    }
+
+    std::cout.clear() ;
+    std::cerr.clear() ;
     
-    // no config file on the command line yet, just return
+    // no config file on the command line yet
+    // print standard arguments and exit
     if( not parseResult._config.has_value() or parseResult._dumpExample) {
-      return 1 ;
+      for( auto &opt : cmdLineOpts ) {
+        std::cout << opt << std::endl ;
+      }
+      return 0 ;
     }
     // try to parse the configuration
     Configuration configuration {} ;
     ConfigHelper::readConfig( parseResult._config.value(), configuration ) ;
-    
-    // 1 - Get command line options
-    auto cmdLineOpts = parser.getStandardOptions() ;
 
     // 2 - Get all section parameters
     std::vector<std::string> parameters ;
