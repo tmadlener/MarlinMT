@@ -100,7 +100,7 @@ namespace marlin {
     TCLAP::ValueArg<std::string> exampleArg( "x", "example", "Dump an example configuration (plugin:descriptor)", false, "", "string" ) ;
     cmdLine.xorAdd( configArg, exampleArg ) ;
     // number of cores
-    TCLAP::ValueArg<std::string> nthreadsArg( "j", "nthreads", "The number of worker threads (only in multi-threaded mode). 'auto' will use all available cores", false, "auto", "unsigned int / string" ) ;
+    TCLAP::ValueArg<std::string> nthreadsArg( "j", "nthreads", "The number of worker threads (only in multi-threaded mode). 'auto' will use all available cores", false, "1", "unsigned int / string" ) ;
     cmdLine.add( nthreadsArg ) ;
     // parse additional args
     std::vector<std::string> parserArgs{} ;
