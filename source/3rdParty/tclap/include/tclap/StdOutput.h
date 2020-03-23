@@ -221,10 +221,6 @@ StdOutput::_longUsage( CmdLineInterface& _cmd,
 				spacePrint( os, (*it)->getDescription(), 75, 5, 0 ); 
 				os << std::endl;
 			}
-
-	os << std::endl;
-
-	spacePrint( os, message, 75, 3, 0 );
 }
 
 inline void StdOutput::spacePrint( std::ostream& os, 
