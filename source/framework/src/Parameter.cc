@@ -48,6 +48,7 @@ namespace marlin {
   
   void ParameterImpl::str( const std::string &value ) {
     _fromStrFunction( _value, value ) ;
+    _isSet = true ;
   }
   
   //--------------------------------------------------------------------------
