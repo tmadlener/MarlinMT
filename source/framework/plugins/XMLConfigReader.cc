@@ -133,12 +133,13 @@ namespace marlin {
      *  @endcode
      *  will add a parameter 'SuperHeroName' with the value 'Batman' to the list of parameters
      * 
-     *  @param element the parent XML element containing parameter tags
-     *  @param cfg the configuration object for constants resolution
-     *  @param section the section to populate with parameters
-     *  @param addAttributes whether to add the XML element attributes in the list of parameters
+     *  @param  element the parent XML element containing parameter tags
+     *  @param  cfg the configuration object for constants resolution
+     *  @param  section the section to populate with parameters
+     *  @param  addAttributes whether to add the XML element attributes in the list of parameters
+     *  @param  replacePrefix the section prefix for replacement parameters
      */
-    void parametersFromXMLElement( const TiXmlElement *element, const Configuration &cfg, ConfigSection &section, bool addAttributes ) const ;
+    void parametersFromXMLElement( const TiXmlElement *element, const Configuration &cfg, ConfigSection &section, bool addAttributes, const std::string &replacePrefix = "" ) const ;
     
     /**
      *  @brief  Treat the conditions for a XML node
@@ -249,7 +250,7 @@ namespace marlin {
     }
     else {
       auto &section = cfg.createSection( name ) ;
-      parametersFromXMLElement( sectionElement, cfg, section, addAttributes ) ;
+      parametersFromXMLElement( sectionElement, cfg, section, addAttributes, name ) ;
     }
   }
   
@@ -277,7 +278,14 @@ namespace marlin {
           MARLIN_THROW_T( ParseException, "Processor " + processorName + " defined more than once in <execute> section" ) ;
         }
         processorNames.push_back( processorName ) ;
-        std::string condition( getAttribute( proc->ToElement(), "condition") ) ;
+        std::string condition ;
+        auto conditionReplace = getReplacementParameter( "execute." + processorName, cfg ) ;
+        if( conditionReplace.has_value() ) {
+          condition = conditionReplace.value() ;
+        }
+        else {
+          condition = getAttribute( proc->ToElement(), "condition") ;
+        }
         cfg.replaceConstants( condition ) ;
         if( condition.empty() ) {
           condition = "true" ;
@@ -333,7 +341,7 @@ namespace marlin {
         // create the section in the configuration
         auto &procSection = parentSection.addSection( name ) ;
         // parse parameters from XML element. Also copy attributes 
-        parametersFromXMLElement( section->ToElement(), cfg, procSection, true ) ;
+        parametersFromXMLElement( section->ToElement(), cfg, procSection, true, name ) ;
         availableProcs.push_back( name ) ;
       }
       catch( marlin::Exception &e ) {
@@ -510,7 +518,7 @@ namespace marlin {
   
   //--------------------------------------------------------------------------
   
-  void XMLConfigReader::parametersFromXMLElement( const TiXmlElement *element, const Configuration &cfg, ConfigSection &section, bool addAttributes ) const {
+  void XMLConfigReader::parametersFromXMLElement( const TiXmlElement *element, const Configuration &cfg, ConfigSection &section, bool addAttributes, const std::string &replacePrefix ) const {
     try {
       auto elementValue = element->ValueStr() ;
       // Copy all XML element attributes to the parameter list
@@ -522,6 +530,9 @@ namespace marlin {
           std::string attrName = attr->Name() ;
           attrName[0] = std::toupper( attrName[0], std::locale() ) ;
           std::string attrValue = attr->ValueStr() ;
+          if( not replacePrefix.empty() ) {
+            attrValue = getReplacementParameter( replacePrefix + "." + attrName, cfg ).value_or( attrValue ) ;
+          }
           cfg.replaceConstants( attrValue ) ;
           section.setParameter( elementValue + attrName, attrValue ) ;
         }
@@ -538,8 +549,9 @@ namespace marlin {
             parameterValue = child->FirstChild()->ValueStr() ;          
           }
         }
-        // TODO: add treatment of command line parameters replacement
-        // ...
+        if( not replacePrefix.empty() ) {
+          parameterValue = getReplacementParameter( replacePrefix + "." + parameterName, cfg ).value_or( parameterValue ) ;
+        }
         cfg.replaceConstants( parameterValue ) ;
         section.setParameter( parameterName, parameterValue ) ;
         // TODO: treatment of in/out types ? drop it?
