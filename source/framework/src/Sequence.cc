@@ -205,6 +205,7 @@ namespace marlin {
     bool clone = parameters.parameter<bool>( "ProcessorClone", true ) ;
     bool critical = parameters.parameter<bool>( "ProcessorCritical", false ) ;
     auto type = parameters.parameter<std::string>( "ProcessorType" ) ;
+    auto name = parameters.parameter<std::string>( "ProcessorName" ) ;
     auto &pluginMgr = PluginManager::instance() ;
     auto processor = pluginMgr.create<Processor>( type ) ;
     if( nullptr == processor ) {
@@ -232,7 +233,8 @@ namespace marlin {
       }
       critical = criticalOpt.value() ;
     }
-    // processor->setParameters( parameters ) ;
+    processor->setName( name ) ;
+    processor->setParameters( parameters ) ;
     std::shared_ptr<std::mutex> lock = critical ? std::make_shared<std::mutex>() : nullptr ;
     if( clone ) {
       // add the first but then create new processor instances and add them
@@ -241,7 +243,8 @@ namespace marlin {
       _uniqueItems.insert( item ) ;
       for( SizeType i=1 ; i<size() ; ++i ) {
         processor = pluginMgr.create<Processor>( type ) ;
-        // processor->setParameters( parameters ) ;
+        processor->setName( name ) ;
+        processor->setParameters( parameters ) ;
         item = _sequences.at(i)->createItem( processor, lock ) ;
         _sequences.at(i)->addItem( item ) ;
         _uniqueItems.insert( item ) ;
