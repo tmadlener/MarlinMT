@@ -507,7 +507,7 @@ namespace marlin {
      *  @brief  Implicit conversion operator to get the parameter value
      */
     inline operator T() const {
-      return *_value.get() ;
+      return get() ;
     }
     
     /**
