@@ -162,9 +162,10 @@ namespace marlin {
   
   template <class T>
   void Component::printParameters() const {
-    log<T>() << name() << " [" << type() << "] parameters:" << std::endl ;
+    log<T>() << name() << " (" << type() << ") parameters:" << std::endl ;
     for( auto iter : _parameters ) {
-      log<T>() << iter.first << "(" << iter.second->typeStr() << "): " << iter.second->str() << std::endl ;
+      auto paramStr = iter.second->isSet() ? iter.second->str() : ( iter.second->hasDefault() ? iter.second->defaultStr() :"[undefined]" ) ;
+      log<T>() << iter.first << " (" << iter.second->typeStr() << "): " << paramStr << std::endl ;
     }
   }
   
