@@ -47,18 +47,42 @@ namespace marlin {
      *  @param  addr the address of the parameter variable
      */
     template <typename T>
-    inline ParameterImpl( EParameterType paramType, const std::string &na, const std::string & desc, std::shared_ptr<T> addr ) :
+    inline ParameterImpl( 
+      EParameterType paramType, 
+      const std::string &na, 
+      const std::string &desc, 
+      std::shared_ptr<T> addr ) :
       _type(paramType),
       _name(na),
       _description(desc),
+      _typeIndex(typeid(T)),
+      _value(addr) {
+      construct<T>() ;
+    }
+    
+    /**
+     *  @brief  Constructor
+     *  
+     *  @param  paramType the parameter type
+     *  @param  na the parameter name
+     *  @param  desc the parameter description
+     *  @param  addr the address of the parameter variable
+     *  @param  defVal the default parameter value
+     */
+    template <typename T>
+    inline ParameterImpl( 
+      EParameterType paramType, 
+      const std::string &na, 
+      const std::string &desc, 
+      std::shared_ptr<T> addr,
+      T defVal ) :
+      _type(paramType),
+      _name(na),
+      _description(desc),
+      _typeIndex(typeid(T)),
       _value(addr),
-      _typeIndex(typeid(T)) {
-      _typeFunction = [] { return details::type_info<T>::type ; };
-      _resetFunction = [this] { *std::static_pointer_cast<T>( _value ).get() = T() ; };
-      _strFunction = [this] { return details::convert<T>::to_string( get<T>() ) ; };
-      _fromStrFunction = [this] ( const std::string &value ) { 
-        *std::static_pointer_cast<T>( _value ).get() = details::convert<T>::from_string( value ) ; 
-      };
+      _defaultValue(std::make_shared<T>(std::move(defVal))) {
+      construct<T>() ;
     }
     
     /**
@@ -82,9 +106,19 @@ namespace marlin {
     bool isSet() const ;
     
     /**
+     *  @brief  Whether the default has been at construct time
+     */
+    bool hasDefault() const ;
+    
+    /**
      *  @brief  Get the parameter value as string
      */
     std::string str() const ;
+    
+    /**
+     *  @brief  Get the default value as string
+     */
+    std::string defaultStr() const ;
     
     /**
      *  @brief  Set the parameter value from a string
@@ -140,7 +174,10 @@ namespace marlin {
     inline T get() const {
       checkType<T>() ;
       if( not isSet() ) {
-        MARLIN_THROW( "Parameter '" + name() +  "' not set" ) ;
+        if( not hasDefault() ) {
+          MARLIN_THROW( "Parameter '" + name() +  "' not set" ) ;          
+        }
+        return *std::static_pointer_cast<T>( _defaultValue ).get() ;
       }
       return *std::static_pointer_cast<T>( _value ).get() ;
     }
@@ -153,17 +190,48 @@ namespace marlin {
      */
     template <typename T>
     inline T get( const T &fallback ) const {
-      checkType<T>() ;
-      if( not isSet() ) {
+      try {
+        return get<T>() ;
+      }
+      catch( Exception & ) {
         return fallback ;
       }
-      return *std::static_pointer_cast<T>( _value ).get() ;
+    }
+    
+    /**
+     *  @brief  Get the default parameter value if set.
+     *  Throw if the default value has not been set
+     */
+    template <typename T>
+    inline T getDefault() const {
+      if( not hasDefault() ) {
+        MARLIN_THROW( "Parameter '" + name() + "' has no default value" ) ;
+      }
+      return *std::static_pointer_cast<T>( _defaultValue ).get() ;
     }
     
     /**
      *  @brief  Reset the parameter value
      */
     void reset() ;
+    
+  private:
+    using ValueType       = std::shared_ptr<void> ;
+    using TypeFunction    = std::function<std::string()> ;
+    using StrFunction     = std::function<std::string(ValueType)> ;
+    using FromStrFunction = std::function<void(ValueType, const std::string &)> ;
+    using ResetFunction   = std::function<void()> ;
+    
+    /// Construct the parameter (called from ctor)
+    template <typename T>
+    inline void construct() {
+      _typeFunction = [] { return details::type_info<T>::type ; };
+      _resetFunction = [this] { *std::static_pointer_cast<T>( _value ).get() = T() ; };
+      _strFunction = [this]( ValueType ptr ) { return details::convert<T>::to_string( *std::static_pointer_cast<T>( ptr ).get() ) ; };
+      _fromStrFunction = [this] ( ValueType ptr, const std::string &value ) { 
+        *std::static_pointer_cast<T>( ptr ).get() = details::convert<T>::from_string( value ) ; 
+      };
+    }
     
   private:
     /// The parameter type
@@ -173,19 +241,21 @@ namespace marlin {
     /// The parameter description
     std::string                                  _description {} ;
     /// The function converting the parameter type to string
-    std::function<std::string()>                 _typeFunction {} ;
+    TypeFunction                                 _typeFunction {} ;
     /// The function converting the parameter value to string
-    std::function<std::string()>                 _strFunction {} ;
+    StrFunction                                  _strFunction {} ;
     ///
-    std::function<void(const std::string &)>     _fromStrFunction {} ;
+    FromStrFunction                              _fromStrFunction {} ;
     /// The function resetting the parameter value
-    std::function<void()>                        _resetFunction {} ;
+    ResetFunction                                _resetFunction {} ;
     /// Whether the parameter is set
     bool                                         _isSet {false} ;
-    /// The address to the parameter value
-    std::shared_ptr<void>                        _value {nullptr} ;
     /// The type index object of the underlying parameter type
     std::type_index                              _typeIndex ;
+    /// The address to the parameter value
+    ValueType                                    _value {nullptr} ;
+    /// The address to the parameter default value
+    ValueType                                    _defaultValue {nullptr} ;
   };
   
   //--------------------------------------------------------------------------
@@ -216,6 +286,23 @@ namespace marlin {
     inline std::shared_ptr<ParameterImpl> addParameter( EParameterType paramType, const std::string &name, const std::string &desc, std::shared_ptr<T> value ) {
       checkParameter( name ) ;
       auto param = std::make_shared<ParameterImpl>( paramType, name, desc, value ) ;
+      _parameters[ name ] = param ;
+      return param ;
+    }
+    
+    /**
+     *  @brief  Add a parameter. Throw if already exists.
+     *  
+     *  @param  paramType the parameter type
+     *  @param  name the parameter name
+     *  @param  desc the parameter description
+     *  @param  value the address to the parameter value
+     *  @param  defVal the default parameter value 
+     */
+    template <typename T>
+    inline std::shared_ptr<ParameterImpl> addParameter( EParameterType paramType, const std::string &name, const std::string &desc, std::shared_ptr<T> value, T defVal ) {
+      checkParameter( name ) ;
+      auto param = std::make_shared<ParameterImpl>( paramType, name, desc, value, std::move(defVal) ) ;
       _parameters[ name ] = param ;
       return param ;
     }
@@ -324,9 +411,8 @@ namespace marlin {
      *  @param  desc the parameter description
      *  @param  defVal the default parameter value
      */
-    inline ParameterBase( EParameterType paramType, const std::string &na, const std::string &desc, const T &defVal ) :
-      _defaultValue( defVal ) {
-      _impl = std::make_shared<ParameterImpl>( paramType, na, desc, _value ) ;
+    inline ParameterBase( EParameterType paramType, const std::string &na, const std::string &desc, const T &defVal ) {
+      _impl = std::make_shared<ParameterImpl>( paramType, na, desc, _value, defVal ) ;
     }
     
     /**
@@ -350,9 +436,8 @@ namespace marlin {
      *  @param  desc the parameter description
      *  @param  defVal the default parameter value
      */
-    inline ParameterBase( Configurable &conf, EParameterType paramType, const std::string &na, const std::string &desc, const T &defVal ) :
-      _defaultValue( defVal ) {
-      _impl = conf.addParameter( paramType, na, desc, _value ) ;
+    inline ParameterBase( Configurable &conf, EParameterType paramType, const std::string &na, const std::string &desc, const T &defVal ) {
+      _impl = conf.addParameter( paramType, na, desc, _value, defVal ) ;
     }
 
     /**
@@ -384,10 +469,24 @@ namespace marlin {
     }
     
     /**
+     *  @brief  Whether the parameter has a default value
+     */
+    inline bool hasDefault() const {
+      return _impl->hasDefault() ;
+    }
+    
+    /**
      *  @brief  Get the parameter value as string
      */
     inline std::string str() const {
       return _impl->str() ;
+    }
+    
+    /**
+     *  @brief  Get the parameter default value as string
+     */
+    inline std::string defaultStr() const {
+      return _impl->defaultStr() ;
     }
     
     /**
@@ -416,10 +515,15 @@ namespace marlin {
      *  not set and has no default value
      */
     inline T get() const {
-      if( isSet() ) {
-        return *_value.get() ;
-      }
-      return _defaultValue.value() ;
+      return _impl->get<T>() ;
+    }
+    
+    /**
+     *  @brief  Get the parameter value. Returns the fallback value
+     *  if the parameter is not set and has no default value
+     */
+    inline T get( const T &fallback ) const {
+      return _impl->get<T>( fallback ) ;
     }
 
     /**
@@ -432,8 +536,6 @@ namespace marlin {
   protected:
     /// The parameter value address
     std::shared_ptr<T>             _value { std::make_shared<T>() } ;
-    /// The optional default value
-    std::optional<T>               _defaultValue {} ;
     /// A shared pointer on the parameter implementation
     std::shared_ptr<ParameterImpl> _impl {} ;
   };

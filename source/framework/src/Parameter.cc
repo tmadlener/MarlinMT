@@ -28,14 +28,26 @@ namespace marlin {
   
   //--------------------------------------------------------------------------
   
+  bool ParameterImpl::hasDefault() const {
+    return (nullptr != _defaultValue) ;
+  }
+  
+  //--------------------------------------------------------------------------
+  
   std::string ParameterImpl::str() const {
-    return _strFunction() ;
+    return isSet() ? _strFunction( _value ) : "" ;
+  }
+  
+  //--------------------------------------------------------------------------
+  
+  std::string ParameterImpl::defaultStr() const {
+    return hasDefault() ? _strFunction( _defaultValue ) : "" ;
   }
   
   //--------------------------------------------------------------------------
   
   void ParameterImpl::str( const std::string &value ) {
-    _fromStrFunction( value ) ;
+    _fromStrFunction( _value, value ) ;
   }
   
   //--------------------------------------------------------------------------
