@@ -197,7 +197,6 @@ endfunction()
 # Usage:
 #     marlin_add_processor_test( <name>
 #        STEERING_FILE <file>
-#				 [PARALLEL]
 #        [REGEX_PASS <regex>]
 #        [REGEX_FAIL <regex>]
 #        [INPUT_FILES <files>]
@@ -205,7 +204,7 @@ endfunction()
 #     )
 #
 function( MARLIN_ADD_PROCESSOR_TEST test_name )
-	cmake_parse_arguments(ARG "PARALLEL" "STEERING_FILE;REGEX_PASS;REGEX_FAIL" "INPUT_FILES;MARLIN_ARGS;MARLIN_DLL;COMPONENTS" ${ARGN} )
+	cmake_parse_arguments(ARG "" "STEERING_FILE;REGEX_PASS;REGEX_FAIL" "INPUT_FILES;MARLIN_ARGS;MARLIN_DLL;COMPONENTS" ${ARGN} )
   if( NOT test_name )
     message( FATAL_ERROR "[UNIT_TESTS] Configuring processor test without name" )
   endif()
