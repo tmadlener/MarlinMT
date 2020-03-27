@@ -1,34 +1,27 @@
 <?xml version="1.0" encoding="us-ascii"?>
 
-<marlin xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://ilcsoft.desy.de/marlin/marlin.xsd">
-
+<marlin>
+  
   <constants>
     <constant name="constantFile" value="constants-eventmodifier.xml"/>
     <include ref="${constantFile}" />
   </constants>
- <execute>
-  <processor name="MyTestEventModifier"/>
- </execute>
-
- <global>
-  <parameter name="Verbosity" options="DEBUG0-4,MESSAGE0-4,WARNING0-4,ERROR0-4,SILENT"> MESSAGE3 DEBUG </parameter>
-  <parameter name="OutputSteeringFile"> base-eventmodifier-parsed.xml </parameter>
- </global>
-
- <datasource type="LCIO">
-   <parameter name="LCIOInputFiles">
-     ${lcioFile}
-   </parameter>
-   <parameter name="MaxRecordNumber" value="4"/>
- </datasource>
-
-<geometry type="EmptyGeometry"/>
-
- <!-- <geometry type="GearGeometry">
-   <parameter name="GearFile"> gear_simjob.xml </parameter>
-   <parameter name="DumpGeometry"> false </parameter>
- </geometry> -->
-
- <include ref="${includefile}"/>
-
+  
+  <execute>
+    <processor name="MyTestEventModifier"/>
+  </execute>
+  
+  <logging>
+    <parameter name="Verbosity"> DEBUG </parameter>
+  </logging>
+  
+  <datasource type="LCIOReader">
+    <parameter name="LCIOInputFiles">${lcioFile}</parameter>
+    <parameter name="MaxRecordNumber" value="4"/>
+  </datasource>
+  
+  <geometry type="EmptyGeometry"/>
+  
+  <include ref="${includefile}"/>
+  
 </marlin>
