@@ -82,11 +82,11 @@ marlin_add_test (
 
 marlin_add_processor_test (
 	histogram
-	PARALLEL
 	STEERING_FILE ${CMAKE_CURRENT_SOURCE_DIR}/steer/histogram.xml
 	INPUT_FILES ${CMAKE_CURRENT_SOURCE_DIR}/data/simjob.slcio
 	REGEX_PASS "success"
 	MARLIN_DLL Marlin::CorePlugins Marlin::LCIOPlugins 
+  MARLIN_ARGS -j 3
 )
 
 marlin_add_processor_test (
