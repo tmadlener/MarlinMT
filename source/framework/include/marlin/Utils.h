@@ -10,6 +10,7 @@
 #include <chrono>
 #include <vector>
 #include <algorithm>
+#include <unordered_map>
 #include <thread>
 
 // -- marlin headers
@@ -536,6 +537,30 @@ namespace marlin {
     
     template <typename K, typename V>
     inline std::vector<K> keys( const std::map<K,V> &m ) {
+      typename std::vector<K> keyRet {} ;
+      keyRet.reserve( m.size() ) ;
+      for( auto &kv : m ) {
+        keyRet.push_back( kv.first ) ;
+      }
+      return keyRet ;
+    }
+    
+    //--------------------------------------------------------------------------
+    
+    template <typename K, typename V>
+    inline std::vector<K> keys( const std::unordered_map<K,V> &m ) {
+      typename std::vector<K> keyRet {} ;
+      keyRet.reserve( m.size() ) ;
+      for( auto &kv : m ) {
+        keyRet.push_back( kv.first ) ;
+      }
+      return keyRet ;
+    }
+    
+    //--------------------------------------------------------------------------
+    
+    template <typename K, typename V>
+    inline std::vector<K> keys( const std::vector<std::pair<K,V>> &m ) {
       typename std::vector<K> keyRet {} ;
       keyRet.reserve( m.size() ) ;
       for( auto &kv : m ) {
