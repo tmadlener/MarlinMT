@@ -85,6 +85,12 @@ namespace marlin {
   }
   
   //--------------------------------------------------------------------------
+  
+  const ConfigSection::ParameterMap &ConfigSection::parameters() const {
+    return _parameters ;
+  }
+  
+  //--------------------------------------------------------------------------
   //--------------------------------------------------------------------------
   
   bool Configuration::hasConstant( const std::string &cn ) const {

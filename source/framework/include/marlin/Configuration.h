@@ -149,6 +149,11 @@ namespace marlin {
      */
     void loadParameters( Configurable &cfg ) const ;
     
+    /**
+     *  @brief  Get the raw parameter storage
+     */
+    const ParameterMap &parameters() const ;
+    
   private:
     /// The subsection map
     ConfigSectionMap           _subsections {} ;
