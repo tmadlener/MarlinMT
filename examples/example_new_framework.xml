@@ -6,15 +6,14 @@
     <processor name="CPUCrunch"/>
     <processor name="MyDumpEvent"/>
   </execute>
-
-  <global>
+  
+  <logging>
     <parameter name="Verbosity"> DEBUG </parameter>
-    <parameter name="Concurrency"> 10 </parameter>
     <parameter name="ColoredConsole"> 0 </parameter>
     <!-- <parameter name="LogFileName"> toto.log </parameter> -->
-  </global>
+  </logging>
 
-  <datasource type="LCIO">
+  <datasource type="LCIOReader">
     <parameter name="LCIOInputFiles">
       test/testmarlin/simjob.slcio
     </parameter>
