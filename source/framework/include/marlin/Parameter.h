@@ -8,6 +8,7 @@
 #include <typeindex>
 #include <memory>
 #include <vector>
+#include <set>
 #include <functional>
 
 // -- marlin headers
@@ -361,13 +362,6 @@ namespace marlin {
      *  @brief  Unset all registered parameters
      */
     void unset() ;
-    
-    /**
-     *  @brief  Set the parameters from the configuration section
-     * 
-     *  @param  section the input parameter section
-     */
-    void setParameters( const ConfigSection &section ) ;
     
     iterator begin() ;
     const_iterator begin() const ;

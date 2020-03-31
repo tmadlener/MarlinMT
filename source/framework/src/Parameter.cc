@@ -110,18 +110,6 @@ namespace marlin {
   
   //--------------------------------------------------------------------------
   
-  void Configurable::setParameters( const ConfigSection &section ) {
-    auto names = section.parameterNames() ;
-    for( auto n : names ) {
-      auto iter = _parameters.find( n ) ;
-      if( _parameters.end() != iter ) {
-        iter->second->str( section.parameter<std::string>( n ) ) ;
-      }
-    }
-  }
-  
-  //--------------------------------------------------------------------------
-  
   Configurable::iterator Configurable::begin() { 
     return _parameters.begin() ; 
   }
