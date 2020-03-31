@@ -70,14 +70,16 @@ marlin_add_test (
   COMMAND $<TARGET_FILE:bin_MarlinMT>
   EXEC_ARGS -x test_marlinminusx.xml
   REGEX_PASS NONE
+  MARLIN_DLL Marlin::CorePlugins
 )
 
 marlin_add_test (
   check-marlinminusx
   COMMAND cat
   EXEC_ARGS test_marlinminusx.xml
-  REGEX_PASS "<parameter name=\"RandomSeed\" value=\"1234567890\" />"
+  REGEX_PASS "<parameter name=\"RandomSeed\">1234567890</parameter>"
   DEPENDS marlinminusx
+  MARLIN_DLL Marlin::CorePlugins
 )
 
 marlin_add_processor_test (
