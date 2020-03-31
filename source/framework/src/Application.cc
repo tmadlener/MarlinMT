@@ -72,7 +72,7 @@ namespace marlin {
     
     // set the main logger name a bit early for more sexy logging
     std::filesystem::path progName = _parseResult._programName ;
-    _loggerMgr.mainLogger()->setName( progName.filename() ) ;
+    _parseResult._programName = progName.filename().string() ;
     
     // load plugins
     auto &pluginMgr = PluginManager::instance() ;
