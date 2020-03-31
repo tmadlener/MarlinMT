@@ -141,6 +141,24 @@ namespace marlin {
      */
     template <class T>
     void printParameters() const ;
+    
+    /**
+     *  @brief  Set the parameters from the configuration section
+     * 
+     *  @param  section the input parameter section
+     *  @param  throwIfNotFound whether to throw if a parameter of the input
+     *          section can not be mapped to a parameters of this component
+     */
+    void setParameters( const ConfigSection &section, bool throwIfNotFound = false ) ;
+    
+    /**
+     *  @brief  Get the parameters from configurable object and 
+     *          populate the config section with 
+     * 
+     *  @param  section the config section to populate
+     *  @param  exclude a list of parameter keys to exclude
+     */
+    void getParameters( ConfigSection &section, const std::set<std::string> &exclude = {} ) const ;
         
   protected:
     /// The component type

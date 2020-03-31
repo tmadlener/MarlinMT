@@ -119,4 +119,37 @@ namespace marlin {
     printParameters<MESSAGE>() ;
   }
   
+  //--------------------------------------------------------------------------
+  
+  void Component::setParameters( const ConfigSection &section, bool throwIfNotFound ) {
+    auto names = section.parameterNames() ;
+    for( auto n : names ) {
+      auto iter = _parameters.find( n ) ;
+      if( _parameters.end() != iter ) {
+        iter->second->str( section.parameter<std::string>( n ) ) ;
+      }
+      else if( throwIfNotFound ) {
+        MARLIN_THROW( "Input parameter '" + n + "' from section '" + section.name() + "' can't be set (not found)" ) ;
+      }
+    }
+  }
+  
+  //--------------------------------------------------------------------------
+  
+  void Component::getParameters( ConfigSection &section, const std::set<std::string> &exclude ) const {
+    auto &metadata = section.metadata() ;
+    metadata["description"] = description() ;
+    metadata["name"] = name() ;
+    metadata["type"] = type() ;
+    for( auto iter : _parameters ) {
+      if( exclude.end() != exclude.find( iter.first ) ) {
+        continue ;
+      }
+      auto value = iter.second->hasDefault() ? iter.second->defaultStr() : "" ;
+      section.setParameter( iter.first, value ) ;
+      metadata[ iter.first + ".description" ] = iter.second->description() ;
+      metadata[ iter.first + ".optional" ] = iter.second->hasDefault() ? "true" : "false" ;
+    }
+  }
+  
 }
