@@ -21,7 +21,8 @@ namespace marlin {
   public:
     using ConfigSectionMap = std::map<std::string, ConfigSection> ;
     using ParameterMap = std::map<std::string, std::string> ;
-    
+    using Metadata = std::map<std::string, std::string> ;
+        
   public:
     // default copy and move
     ConfigSection( const ConfigSection& ) = default ;
@@ -140,6 +141,16 @@ namespace marlin {
      *  @brief  Get the list of parameter names
      */
     std::vector<std::string> parameterNames() const ;
+    
+    /**
+     *  @brief  Get the section metadata
+     */
+    const Metadata &metadata() const ;
+    
+    /**
+     *  @brief  Get the section metadata
+     */
+    Metadata &metadata() ;
     ///@}
     
     /**
@@ -159,6 +170,8 @@ namespace marlin {
     ConfigSectionMap           _subsections {} ;
     /// The parameter map
     ParameterMap               _parameters {} ;
+    /// The section metdata map
+    Metadata                   _metadata {} ;
     /// The section name
     const std::string          _name ;
   };

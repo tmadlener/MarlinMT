@@ -91,6 +91,18 @@ namespace marlin {
   }
   
   //--------------------------------------------------------------------------
+  
+  const ConfigSection::Metadata &ConfigSection::metadata() const {
+    return _metadata ;    
+  }
+  
+  //--------------------------------------------------------------------------
+  
+  ConfigSection::Metadata &ConfigSection::metadata() {
+    return _metadata ;
+  }
+  
+  //--------------------------------------------------------------------------
   //--------------------------------------------------------------------------
   
   bool Configuration::hasConstant( const std::string &cn ) const {
