@@ -5,6 +5,7 @@
 #include <map>
 #include <string>
 #include <mutex>
+#include <any>
 #include <memory>
 #include <vector>
 #include <functional>
@@ -17,13 +18,13 @@
 // Helper macros to declare plugins
 // R. Ete: Impossible to make a function outside of main.
 // The workaround is to create a structure on-the-fly that make the function call in the constructor
-#define MARLIN_DECLARE_PLUGIN( Class ) MARLIN_DECLARE_PLUGIN_NAME( Class, #Class )
+#define MARLIN_DECLARE_PLUGIN( Base, Class ) MARLIN_DECLARE_PLUGIN_NAME( Base, Class, #Class )
 
-#define MARLIN_DECLARE_PLUGIN_NAME( Class, NameStr ) \
+#define MARLIN_DECLARE_PLUGIN_NAME( Base, Class, NameStr ) \
   namespace marlin_plugins { \
     struct PluginDeclaration_##Class { \
       PluginDeclaration_##Class() { \
-        marlin::PluginManager::instance().registerPlugin<Class>( NameStr, false ) ; \
+        marlin::PluginManager::instance().registerPlugin<Base, Class>( NameStr, false ) ; \
       } \
     }; \
     static PluginDeclaration_##Class __instance_##Class ; \
@@ -32,8 +33,24 @@
 // processor plugin declaration
 #define MARLIN_DECLARE_PROCESSOR( Class ) namespace { \
   static const auto __processortype__ = Class().type() ; \
-  MARLIN_DECLARE_PLUGIN_NAME( Class, __processortype__ ) \
+  MARLIN_DECLARE_PLUGIN_NAME( marlin::Processor, Class, __processortype__ ) \
 }
+
+// geometry plugin declaration
+#define MARLIN_DECLARE_GEOMETRY( Class ) MARLIN_DECLARE_PLUGIN( marlin::GeometryPlugin, Class )
+#define MARLIN_DECLARE_GEOMETRY_NAME( Class, NameStr ) MARLIN_DECLARE_PLUGIN_NAME( marlin::GeometryPlugin, Class, NameStr )
+
+// data source plugin declaration
+#define MARLIN_DECLARE_DATASOURCE( Class ) MARLIN_DECLARE_PLUGIN( marlin::DataSourcePlugin, Class )
+#define MARLIN_DECLARE_DATASOURCE_NAME( Class, NameStr ) MARLIN_DECLARE_PLUGIN_NAME( marlin::DataSourcePlugin, Class, NameStr )
+
+// config reader plugin declaration
+#define MARLIN_DECLARE_CONFIG_READER( Class ) MARLIN_DECLARE_PLUGIN( marlin::ConfigReader, Class )
+#define MARLIN_DECLARE_CONFIG_READER_NAME( Class, NameStr ) MARLIN_DECLARE_PLUGIN_NAME( marlin::ConfigReader, Class, NameStr )
+
+// config writer plugin declaration
+#define MARLIN_DECLARE_CONFIG_WRITER( Class ) MARLIN_DECLARE_PLUGIN( marlin::ConfigWriter, Class )
+#define MARLIN_DECLARE_CONFIG_WRITER_NAME( Class, NameStr ) MARLIN_DECLARE_PLUGIN_NAME( marlin::ConfigWriter, Class, NameStr )
 
 namespace marlin {
 
@@ -47,8 +64,11 @@ namespace marlin {
   class PluginManager {
   public:
     // typedefs
-    typedef std::shared_ptr<void>                       PluginPtr ;
-    typedef std::function<PluginPtr()>                  FactoryFunction ;
+    using FactoryFunction = std::any ;
+    template <typename B>
+    using FactoryFunctionT = std::function<std::unique_ptr<B>()> ;
+    // typedef void*                                       PluginPtr ;
+    // typedef std::function<PluginPtr()>                  FactoryFunction ;
     
     struct FactoryData {
       /// The name of the library of the plugin 
@@ -92,7 +112,7 @@ namespace marlin {
      *  @param  name the plugin name
      *  @param  ignoreDuplicate whether to avoid exception throw in case of duplicate entry
      */
-    template <typename T>
+    template <typename B, typename T>
     void registerPlugin( const std::string &name, bool ignoreDuplicate = false ) ;
 
     /**
@@ -140,7 +160,7 @@ namespace marlin {
      *  @param  name the plugin name
      */
     template <typename T>
-    std::shared_ptr<T> create( const std::string &name ) const ;
+    std::unique_ptr<T> create( const std::string &name ) const ;
 
     /**
      *  @brief  Dump plugin manager content in console
@@ -172,27 +192,36 @@ namespace marlin {
   //--------------------------------------------------------------------------
   //--------------------------------------------------------------------------
 
-  template <typename T>
+  template <typename B, typename T>
   inline void PluginManager::registerPlugin( const std::string &name, bool ignoreDuplicate ) {
-    FactoryFunction factoryFunction = [](){
-      return std::make_shared<T>() ;
+    FactoryFunctionT<B> factoryFunction = []() -> std::unique_ptr<B> {
+      return std::make_unique<T>() ;
     };
-    registerPlugin( name, factoryFunction, ignoreDuplicate ) ;
+    std::any anyFactory = factoryFunction ;
+    registerPlugin( name, anyFactory, ignoreDuplicate ) ;
   }
 
   //--------------------------------------------------------------------------
 
   template <typename T>
-  inline std::shared_ptr<T> PluginManager::create( const std::string &name ) const {
+  inline std::unique_ptr<T> PluginManager::create( const std::string &name ) const {
     lock_type lock( _mutex ) ;
     auto factoryIter = _pluginFactories.find( name ) ;
     // plugin not found ?
     if ( _pluginFactories.end() == factoryIter ) {
-      _logger->log<DEBUG5>() << "Plugin '" << name << "' not found" << std::endl ;
+      _logger->log<MESSAGE>() << "Plugin '" << name << "' not found" << std::endl ;
       return nullptr ;
     }
-    auto pointer = factoryIter->second._factory() ; // factory function call
-    return std::static_pointer_cast<T, void>( pointer ) ;
+    _logger->log<MESSAGE>() << "Plugin name: " << name << std::endl ;
+    _logger->log<MESSAGE>() << "Library: " << factoryIter->second._libraryName << std::endl ;
+    try {
+      auto factory = std::any_cast<FactoryFunctionT<T>>( factoryIter->second._factory ) ;
+      return factory() ;
+    }
+    catch(const std::bad_any_cast& e) {
+      _logger->log<MESSAGE>() << "Wrong cast of base type: " << e.what() << std::endl ;
+      return nullptr ;
+    }
   }
 
 } // end namespace marlin
