@@ -207,7 +207,7 @@ namespace marlin {
     auto type = parameters.parameter<std::string>( "ProcessorType" ) ;
     auto name = parameters.parameter<std::string>( "ProcessorName" ) ;
     auto &pluginMgr = PluginManager::instance() ;
-    auto processor = pluginMgr.create<Processor>( type ) ;
+    std::shared_ptr<Processor> processor = pluginMgr.create<Processor>( type ) ;
     if( nullptr == processor ) {
       throw Exception( "Processor of type '" + type + "' doesn't exists !" ) ;
     }
