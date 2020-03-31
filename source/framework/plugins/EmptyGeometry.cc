@@ -25,6 +25,6 @@ namespace marlin {
     void dumpGeometry() const override { /* nop */ }
   };
 
-  MARLIN_DECLARE_PLUGIN( EmptyGeometry )
+  MARLIN_DECLARE_GEOMETRY( EmptyGeometry )
   
 }

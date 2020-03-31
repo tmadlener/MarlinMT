@@ -671,6 +671,6 @@ namespace marlin {
   }
   
   // plugin registration
-  MARLIN_DECLARE_PLUGIN( XMLConfigReader )
+  MARLIN_DECLARE_CONFIG_READER( XMLConfigReader )
 
 }  // namespace marlin

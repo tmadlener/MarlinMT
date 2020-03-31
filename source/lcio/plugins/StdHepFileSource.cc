@@ -109,6 +109,6 @@ namespace marlin {
     return true ;
   }
 
-  MARLIN_DECLARE_PLUGIN_NAME( StdHepFileSource, "StdHepReader" )
+  MARLIN_DECLARE_DATASOURCE_NAME( StdHepFileSource, "StdHepReader" )
 
 }

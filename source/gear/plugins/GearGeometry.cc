@@ -75,7 +75,7 @@ namespace marlin {
     _logger->log<MESSAGE>() << *_gearMgr << std::endl ;
   }
 
-  MARLIN_DECLARE_PLUGIN( GearGeometry )
+  MARLIN_DECLARE_GEOMETRY( GearGeometry )
   
 } // namespace marlin
 

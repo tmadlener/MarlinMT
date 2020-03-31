@@ -222,6 +222,6 @@ namespace marlin {
     _logger->log<MESSAGE>() << "############################################################################### "  << std::endl  << std::endl  ;
   }
   
-  MARLIN_DECLARE_PLUGIN( DD4hepGeometry )
+  MARLIN_DECLARE_GEOMETRY( DD4hepGeometry )
 
 } // namespace marlin

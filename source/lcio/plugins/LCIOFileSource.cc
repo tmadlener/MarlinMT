@@ -124,7 +124,7 @@ namespace marlin {
     return true ;
   }
 
-  MARLIN_DECLARE_PLUGIN_NAME( LCIOFileSource, "LCIOReader" )
+  MARLIN_DECLARE_DATASOURCE_NAME( LCIOFileSource, "LCIOReader" )
 
 }
 
