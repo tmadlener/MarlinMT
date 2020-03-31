@@ -4,25 +4,60 @@
 #include <marlin/PluginManager.h>
 #include <marlin/Utils.h>
 #include <marlin/DataSourcePlugin.h>
+#include <marlin/Processor.h>
 #include <marlin/MarlinConfig.h>
 #include <marlin/EventExtensions.h>
 #include <marlin/IScheduler.h>
 #include <marlin/SimpleScheduler.h>
+#include <marlin/concurrency/PEPScheduler.h>
 #include <marlin/EventStore.h>
 #include <marlin/RunHeader.h>
 
 // -- std headers
 #include <cstring>
+#include <filesystem>
 
 using namespace std::placeholders ;
 
 namespace marlin {
+  
+  int Application::main( int argc, char**argv ) {
+    // configure and run application
+    Application application ;
+    auto logger = application.logger() ;
+    try {    
+      application.init( argc, argv ) ;
+      application.run() ;
+    }
+    catch ( marlin::Exception &e ) {
+      logger->log<ERROR>() << "MarlinMT main, caught Marlin exception " << e.what() << std::endl ;
+      logger->log<ERROR>() << "Exiting with status 1" << std::endl ;
+      return 1 ;
+    }
+    catch ( std::exception &e ) {
+      logger->log<ERROR>() << "MarlinMT main, caught std::exception " << e.what() << std::endl ;
+      logger->log<ERROR>() << "Exiting with status 1" << std::endl ;
+      return 1 ;
+    }
+    catch ( ... ) {
+      logger->log<ERROR>() << "MarlinMT main, caught unknown exception" << std::endl ;
+      logger->log<ERROR>() << "Exiting with status 2" << std::endl ;
+      return 2 ;
+    }
+    return 0 ;
+  }
+  
+  //--------------------------------------------------------------------------
 
   void Application::init( int argc, char **argv ) {
+    // Geeky MarlinMT logo 
+    details::print_banner( std::cout ) ;
+    
     // Parse command line first
     CmdLineParser parser ;
     _parseResult = parser.parse( argc, argv ) ;
-    // populate the configuration with command line parameters
+    
+    // Populate the configuration with command line parameters
     auto fullCmdLine = details::convert<std::vector<std::string>>::to_string( _parseResult._arguments ) ;
     fullCmdLine = std::string(argv[0]) + " " + fullCmdLine ;
     auto &cmdLineSection = _configuration.createSection( "CmdLine" ) ;
@@ -35,84 +70,94 @@ namespace marlin {
       argsSection.setParameter( arg.first, arg.second ) ;
     }
     
-    // geeky MarlinMT logo 
-    printBanner() ;
+    // set the main logger name a bit early for more sexy logging
+    std::filesystem::path progName = _parseResult._programName ;
+    _loggerMgr.mainLogger()->setName( progName.filename() ) ;
     
-    // set the main logger name a bit early for clearer logging
-    _loggerMgr.mainLogger()->setName( _parseResult._programName ) ;
+    // load plugins
+    auto &pluginMgr = PluginManager::instance() ;
+    pluginMgr.logger()->setLevel<MESSAGE>() ;
+    auto libraries = details::split_string<std::string>( details::getenv<std::string>( "MARLIN_DLL", "" ), ":" ) ;
+    pluginMgr.loadLibraries( libraries ) ;
+    
+    if( _parseResult._dumpExample ) {
+      _initialized = true ;
+      return ;
+    }
     
     // parse the config
     ConfigHelper::readConfig( _parseResult._config.value(), _configuration ) ;
     
     // initialize logging
     _loggerMgr.setup( this ) ;
-    // // initialize BookStore
-    // _bookStoreManager.init( this ) ;
-    // // check at this point for a scheduler instance
-    // if( nullptr == _scheduler ) {
-    //   logger()->log<MESSAGE>() << "No scheduler set. Using SimpleScheduler (single threaded program)" << std::endl ;
-    //   _scheduler = std::make_shared<SimpleScheduler>() ;
-    // }
-    // // initialize geometry
-    // _geometryMgr.init( this ) ;
-    // // initialize scheduler
-    // _scheduler->init( this ) ;
-    // // initialize data source
-    // auto parameters = dataSourceParameters() ;
-    // auto dstype = parameters->getValue<std::string>( "DataSourceType" ) ;
-    // auto &pluginMgr = PluginManager::instance() ;
-    // _dataSource = pluginMgr.create<DataSourcePlugin>( PluginType::DataSource, dstype ) ;
-    // if( nullptr == _dataSource ) {
-    //   throw Exception( "Data source of type '" + dstype + "' not found in plugins" ) ;
-    // }
-    // _dataSource->setup( this ) ;
-    // // setup callbacks
-    // _dataSource->onEventRead( std::bind( &Application::onEventRead, this, _1 ) ) ;
-    // _dataSource->onRunHeaderRead( std::bind( &Application::onRunHeaderRead, this, _1 ) ) ;
-    // // store processor conditions
-    // auto activeProcs = activeProcessors() ;
-    // auto processorConds = processorConditions() ;
-    // const bool useConditions = ( activeProcs.size() == processorConds.size() ) ;
-    // if( useConditions ) {
-    //   for( std::size_t i=0 ; i<activeProcs.size() ; ++i ) {
-    //     _conditions[ activeProcs[i] ] = processorConds[i] ;
-    //   }
-    // }
+    logger()->log<MESSAGE0>() << "============ Configuration ============" << std::endl ;
+    logger()->log<MESSAGE0>() << _configuration << std::endl ;
+    logger()->log<MESSAGE0>() << "=======================================" << std::endl ;
+    
+    // initialize BookStore
+    _bookStoreManager.setup( this ) ;
+    
+    // initialize geometry
+    _geometryMgr.setup( this ) ;
+    
+    // setup scheduler
+    if( 0 == _parseResult._nthreads ) {
+      MARLIN_THROW( "Number of threads can't be 0 !" ) ;
+    }
+    if( 1 == _parseResult._nthreads ) {
+      logger()->log<MESSAGE>() << "Running in single-thread mode" << std::endl ;
+      _scheduler = std::make_shared<SimpleScheduler>() ;
+    }
+    else {
+      logger()->log<MESSAGE>() << "Running in multi-thread mode (nthreads=" << _parseResult._nthreads << ")" << std::endl ;
+      _scheduler = std::make_shared<concurrency::PEPScheduler>() ;
+    }
+    _scheduler->setup( this ) ;
+
+    // initialize data source
+    auto dstype = configuration().section("datasource").parameter<std::string>( "DatasourceType" ) ;
+    _dataSource = pluginMgr.create<DataSourcePlugin>( dstype ) ;
+    if( nullptr == _dataSource ) {
+      MARLIN_THROW( "Data source of type '" + dstype + "' not found in plugins" ) ;
+    }
+    _dataSource->setup( this ) ;
+    _dataSource->onEventRead( std::bind( &Application::onEventRead, this, _1 ) ) ;
+    _dataSource->onRunHeaderRead( std::bind( &Application::onRunHeaderRead, this, _1 ) ) ;
+    
+    // store processor conditions
+    auto &execSection = _configuration.section("execute") ;
+    auto procs = execSection.parameterNames() ;
+    for( auto &proc : procs ) {
+      _conditions[ proc ] = execSection.parameter<std::string>( proc ) ;
+    }
     _initialized = true ;
   }
-  
-  // //--------------------------------------------------------------------------
-  // 
-  // void Application::storeCommandLine( int argc, const char **argv ) {
-  //   std::string pname = argv[0] ;
-  //   auto pos = pname.find_last_of("/") ;
-  //   _programName = pname.substr(pos+1) ;
-  //   for ( int i=1 ; i<argc ; i++ ) {
-  //     _arguments.push_back( argv[i] ) ;
-  //   }
-  // }
 
   //--------------------------------------------------------------------------
 
   void Application::run() {
-    // try {
-    //   _dataSource->readAll() ;
-    // }
-    // catch( StopProcessingException &e ) {
-    //   logger()->log<ERROR>() << std::endl
-    //       << " **********************************************************" << std::endl
-    //       << " *                                                        *" << std::endl
-    //       << " *   Stop of EventProcessing requested by processor :     *" << std::endl
-    //       << " *                  "  << e.what()                           << std::endl
-    //       << " *     will call end() method of all processors !         *" << std::endl
-    //       << " *                                                        *" << std::endl
-    //       << " **********************************************************" << std::endl
-    //       << std::endl ;
-    //   throw e ;
-    // }
-    // _geometryMgr.clear() ;
-    // _scheduler->end() ;
-    // _bookStoreManager.writeToDisk();
+    if( _parseResult._dumpExample ) {
+      logger()->log<MESSAGE>() << "Dry run. Output configuration in: " << _parseResult._config.value() << std::endl ;
+      dumpExampleConfig() ;
+      return ;
+    }
+    try {
+      _dataSource->readAll() ;
+    }
+    catch( StopProcessingException &e ) {
+      logger()->log<ERROR>() << std::endl
+          << " **********************************************************" << std::endl
+          << " *                                                        *" << std::endl
+          << " *   Stop of event processing requested by processor :    *" << std::endl
+          << " *                  "  << e.what()                           << std::endl
+          << " *     will call end() method of all processors !         *" << std::endl
+          << " *                                                        *" << std::endl
+          << " **********************************************************" << std::endl
+          << std::endl ;
+    }
+    _geometryMgr.clear() ;
+    _scheduler->end() ;
+    _bookStoreManager.writeToDisk();
   }
   
   //--------------------------------------------------------------------------
@@ -126,190 +171,6 @@ namespace marlin {
   const std::string &Application::programName() const { 
     return cmdLineParseResult()._programName ; 
   }
-
-  //--------------------------------------------------------------------------
-// 
-//   void Application::printUsage() const {
-//     logger()->log<MESSAGE>() << " Usage: " << _programName << " [OPTION] [FILE]..." << std::endl
-//     << "   runs a " << _programName << " application " << std::endl
-//     << std::endl
-//     << " Running the application with a given steering file:" << std::endl
-//     << "   " << _programName << " steer.xml   " << std::endl
-//     << std::endl
-//     << "   " << _programName << " [-h/-?]             \t print this help information" << std::endl
-//     << "   " << _programName << " -x [steer.xml]      \t print an example steering file to output file file (default: marlin_steer.xml)" << std::endl
-//     // << "   " << _programName << " -c steer.xml        \t check the given steering file for consistency" << std::endl
-//     // << "   " << _programName << " -u old.xml new.xml  \t consistency check with update of xml file"  << std::endl
-//     // << "   " << _programName << " -d steer.xml flow.dot\t create a program flow diagram (see: http://www.graphviz.org)" << std::endl
-//     << std::endl
-//     << " Example: " << std::endl
-//     << " To create a new default steering file from any Marlin application, run" << std::endl
-//     << "     " << _programName << " -x  mysteer.xml" << std::endl
-//     // << " and then use either an editor or the MarlinGUI to modify the created steering file " << std::endl
-//     // << " to configure your application and then run it. e.g. : " << std::endl
-//     // << "     " << _programName << " mysteer.xml > marlin.out 2>&1 &" << std::endl << std::endl
-//     << " Dynamic command line options may be specified in order to overwrite individual steering file parameters, e.g.:" << std::endl
-//     << "     " << _programName << " --datasource.LCIOInputFiles=\"input1.slcio input2.slcio\" --geometry.CompactFile=mydetector.xml" << std::endl
-//     << "            --MyLCIOOutputProcessor.LCIOWriteMode=WRITE_APPEND --MyLCIOOutputProcessor.LCIOOutputFile=out.slcio steer.xml" << std::endl << std::endl
-//     << "     NOTE: Dynamic options do NOT work together with " << _programName << " options (-x, -f) nor with the MarlinGUI" << std::endl
-// << std::endl ;
-//   }
-
-  //--------------------------------------------------------------------------
-
-  // void Application::parseCommandLine() {
-  //   logger()->log<MESSAGE>() << "Parsing command line ..." << std::endl ;
-  //   _steeringFileName.clear() ;
-  //   _cmdLineOptions.clear() ;
-  //   auto cmdLineArgs = _arguments ;
-  //   if ( cmdLineArgs.empty() ) {
-  //     printUsage() ;
-  //     logger()->log<ERROR>() << "No command line option provided. Expected at least a steering file..." << std::endl ;
-  //     ::exit( 1 ) ;
-  //   }
-  //   auto iter = cmdLineArgs.begin() ;
-  //   // start with dynamic arguments
-  //   while ( cmdLineArgs.end() != iter ) {
-  //     auto arg = *iter ;
-  //     if ( arg.substr( 0, 2 ) == "--" ) {
-  //       auto argVec = StringUtil::split<std::string>( arg.substr( 2 ) , "=" ) ;
-  //       if ( argVec.size() != 2 ) {
-  //         printUsage() ;
-  //         logger()->log<ERROR>() << "*** invalid command line option: " << arg << std::endl ;
-  //         ::exit( 1 ) ;
-  //       }
-  //       auto argKey = StringUtil::split<std::string>( argVec[0] , "." ) ;
-  //       if ( argKey.size() != 2 ) {
-  //         printUsage() ;
-  //         logger()->log<ERROR>() << "*** invalid command line option: " << arg << std::endl ;
-  //         ::exit( 1 ) ;
-  //       }
-  //       _cmdLineOptions[ argKey[0] ][ argKey[1] ] = argVec[1] ;
-  //       logger()->log<MESSAGE9>()
-  //         << "steering file " << argKey[0] << ": "
-  //         << "[ " << argKey[0] << "." << argKey[1] << " ]"
-  //         << " will be OVERWRITTEN with value: [\"" << argVec[1] << "\"]"  << std::endl ;
-  //       iter = cmdLineArgs.erase( iter ) ;
-  //       continue;
-  //     }
-  //     ++iter ;
-  //   }
-  //   // parse remaining arguments
-  //   iter = cmdLineArgs.begin() ;
-  //   while ( cmdLineArgs.end() != iter  ) {
-  //     auto arg = *iter ;
-  //     // print plugin manager content and exit
-  //     if ( arg == "-p" ) {
-  //       PluginManager::instance().dump() ;
-  //       ::exit( 0 ) ;
-  //     }
-  //     // print help and exit
-  //     else if ( arg == "-h" || arg == "-?" ) {
-  //       printUsage() ;
-  //       ::exit( 0 ) ;
-  //     }
-  //     // dump an example steering file to output file
-  //     else if( arg == "-x" ) {
-  //       auto nextarg = std::next( iter ) ;
-  //       std::string fname = "marlin_steer.xml" ;
-  //       if( nextarg != cmdLineArgs.end() ) {
-  //         std::string outname = *nextarg ;
-  //         bool xmlext = (outname.size() >= 4 and
-  //          outname.compare(outname.size() - 4, 4, ".xml") == 0 ) ;
-  //         if( xmlext ) {
-  //           fname = outname ;
-  //         }
-  //       }
-  //       XMLTools::dumpRegisteredProcessors( fname ) ;
-  //       ::exit( 0 ) ;
-  //     }
-  //     // last argument is steering file
-  //     else if( std::next( iter ) == cmdLineArgs.end() ) {
-  //       _steeringFileName = arg ;
-  //     }
-  //     else {
-  //       _filteredArguments.push_back( arg ) ;
-  //     }
-  //     ++iter ;
-  //   }
-  //   if ( _steeringFileName.empty() ) {
-  //     printUsage() ;
-  //     logger()->log<ERROR>() << "No steering file provided ..." << std::endl ;
-  //     ::exit( 1 ) ;
-  //   }
-  //   logger()->log<DEBUG2>() << "Parsing command line ... done" << std::endl ;
-  // }
-
-  //--------------------------------------------------------------------------
-
-  void Application::printBanner( std::ostream &out ) const {
-    out << std::endl ;
-    out << "    __  __            _ _       " << std::endl ;
-    out << "   |  \\/  | __ _ _ __| (_)_ __  " << std::endl ;
-    out << "   | |\\/| |/ _` | '__| | | '_ \\" << std::endl ;
-    out << "   | |  | | (_| | |  | | | | | |" << std::endl ;
-    out << "   |_|  |_|\\__,_|_|  |_|_|_| |_|" << std::endl ;
-    out << std::endl ;
-    out << "         Version: " << MARLIN_RELEASE << std::endl ;
-    out << std::endl ;
-    out << "         LICENCE: GPLv3 " << std::endl ;
-    out << "    Copyright (C), Marlin Authors" << std::endl ;
-    out << std::endl ;
-  }
-
-  //--------------------------------------------------------------------------
-
-  // std::shared_ptr<StringParameters> Application::globalParameters () const {
-  //   return (nullptr == _parser) ? nullptr : _parser->getParameters( "Global" ) ;
-  // }
-  // 
-  // //--------------------------------------------------------------------------
-  // 
-  // std::shared_ptr<StringParameters> Application::bookStoreParameters () const {
-  //   return (nullptr == _parser) ? nullptr : _parser->getParameters( "BookStore" ) ;
-  // }
-  // 
-  // //--------------------------------------------------------------------------
-  // 
-  // std::shared_ptr<StringParameters> Application::geometryParameters () const {
-  //   return (nullptr == _parser) ? nullptr : _parser->getParameters( "Geometry" ) ;
-  // }
-  // 
-  // //--------------------------------------------------------------------------
-  // 
-  // std::shared_ptr<StringParameters> Application::dataSourceParameters () const {
-  //   return (nullptr == _parser) ? nullptr : _parser->getParameters( "DataSource" ) ;
-  // }
-  // 
-  // //--------------------------------------------------------------------------
-  // 
-  // std::shared_ptr<StringParameters> Application::processorParameters ( const std::string &name ) const {
-  //   return (nullptr == _parser) ? nullptr : _parser->getParameters( name ) ;
-  // }
-  // 
-  // //--------------------------------------------------------------------------
-  // 
-  // std::shared_ptr<StringParameters> Application::constants () const {
-  //   return (nullptr == _parser) ? nullptr : _parser->getParameters( "Constants" ) ;
-  // }
-
-  //--------------------------------------------------------------------------
-
-  // std::vector<std::string> Application::activeProcessors () const {
-  //   if( nullptr == _parser ) {
-  //     return std::vector<std::string>() ;
-  //   }
-  //   return _parser->getParameters( "Global" )->getValues<std::string>( "ActiveProcessors", std::vector<std::string>() ) ;
-  // }
-  // 
-  // //--------------------------------------------------------------------------
-  // 
-  // std::vector<std::string> Application::processorConditions () const {
-  //   if( nullptr == _parser ) {
-  //     return std::vector<std::string>() ;
-  //   }
-  //   return _parser->getParameters( "Global" )->getValues<std::string>( "ProcessorConditions", std::vector<std::string>() ) ;
-  // }
 
   //--------------------------------------------------------------------------
 
@@ -336,77 +197,69 @@ namespace marlin {
 
   //--------------------------------------------------------------------------
 
-  // void Application::onEventRead( std::shared_ptr<EventStore> event ) {
-    // EventList events ;
-    // while( _scheduler->freeSlots() == 0 ) {
-    //   _scheduler->popFinishedEvents( events ) ;
-    //   if( not events.empty() ) {
-    //     processFinishedEvents( events ) ;
-    //     events.clear() ;
-    //     break;
-    //   }
-    //   std::this_thread::sleep_for( std::chrono::milliseconds(1) ) ;
-    // }
-    // // prepare event extensions for users
-    // // random seeds extension
-    // auto seeds = _randomSeedMgr.generateRandomSeeds( event.get() ) ;
-    // auto randomSeedExtension = new RandomSeedExtension( std::move(seeds) ) ;
-    // event->extensions().add<extensions::RandomSeed>( randomSeedExtension ) ;
-    // // runtime conditions extension
-    // auto procCondExtension = new ProcessorConditionsExtension( _conditions ) ;
-    // event->extensions().add<extensions::ProcessorConditions>( procCondExtension )  ;
-    // // first event flag
-    // *( event->extensions().create<extensions::IsFirstEvent, bool>( true ) ) = _isFirstEvent ;
-    // _isFirstEvent = false ;
-    // _scheduler->pushEvent( event ) ;
-    // // check a second time
-    // _scheduler->popFinishedEvents( events ) ;
-    // if( not events.empty() ) {
-    //   processFinishedEvents( events ) ;
-    // }
-  // }
-
+  void Application::onEventRead( std::shared_ptr<EventStore> event ) {
+    EventList events ;
+    while( _scheduler->freeSlots() == 0 ) {
+      _scheduler->popFinishedEvents( events ) ;
+      if( not events.empty() ) {
+        processFinishedEvents( events ) ;
+        events.clear() ;
+        break;
+      }
+      std::this_thread::sleep_for( std::chrono::milliseconds(1) ) ;
+    }
+    // prepare event extensions for users
+    // random seeds extension
+    auto seeds = _randomSeedMgr.generateRandomSeeds( event.get() ) ;
+    auto randomSeedExtension = new RandomSeedExtension( std::move(seeds) ) ;
+    event->extensions().add<extensions::RandomSeed>( randomSeedExtension ) ;
+    // runtime conditions extension
+    // TODO replace this
+    auto procCondExtension = new ProcessorConditionsExtension( _conditions ) ;
+    event->extensions().add<extensions::ProcessorConditions>( procCondExtension )  ;
+    _scheduler->pushEvent( event ) ;
+    // check a second time
+    _scheduler->popFinishedEvents( events ) ;
+    if( not events.empty() ) {
+      processFinishedEvents( events ) ;
+    }
+  }
+  
   //--------------------------------------------------------------------------
-
-  // void Application::onRunHeaderRead( std::shared_ptr<RunHeader> rhdr ) {
-    // logger()->log<MESSAGE9>() << "New run header no " << rhdr->runNumber() << std::endl ;
-    // _scheduler->processRunHeader( rhdr ) ;
-  // }
-
+  
+  void Application::onRunHeaderRead( std::shared_ptr<RunHeader> rhdr ) {
+    logger()->log<MESSAGE9>() << "New run header no " << rhdr->runNumber() << std::endl ;
+    _scheduler->processRunHeader( rhdr ) ;
+  }
+  
   //--------------------------------------------------------------------------
-
+  
   const GeometryManager &Application::geometryManager() const {
     return _geometryMgr ;
   }
-
+  
   //--------------------------------------------------------------------------
-
+  
   const RandomSeedManager &Application::randomSeedManager() const {
     return _randomSeedMgr ;
   }
-
+  
   //--------------------------------------------------------------------------
-
+  
   RandomSeedManager &Application::randomSeedManager() {
     return _randomSeedMgr ;
   }
-
+  
   //--------------------------------------------------------------------------
-
-  // void Application::setScheduler( Scheduler scheduler ) {
-  //   _scheduler = scheduler ;
-  // }
-  // 
-  //--------------------------------------------------------------------------
-
-  // void Application::processFinishedEvents( const EventList &events ) const {
-    // // simple printout for the time being
-    // for( auto event : events ) {
-    //   logger()->log<MESSAGE9>()
-    //     << "Event uid " << event->uid()
-    //     << " finished" << std::endl ;
-    // }
-  // }
+  
+  void Application::processFinishedEvents( const EventList &events ) const {
+    // simple printout for the time being
+    for( auto event : events ) {
+      logger()->log<MESSAGE9>()
+        << "Event uid " << event->uid()
+        << " finished" << std::endl ;
+    }
+  }
   
   //--------------------------------------------------------------------------
   
@@ -424,6 +277,60 @@ namespace marlin {
   
   const Configuration &Application::configuration() const {
     return _configuration ;
+  }
+  
+  //--------------------------------------------------------------------------
+  
+  void Application::dumpExampleConfig() {
+    Configuration &config = _configuration ;
+    auto &pluginMgr = PluginManager::instance() ;
+    
+    auto &execSection = config.createSection("execute") ;
+    execSection.setParameter( "MyTestProcessor", true ) ;
+    
+    auto &loggingSection = config.createSection("logging") ;
+    _loggerMgr.getParameters( loggingSection ) ;
+    
+    auto &geometrySection = config.createSection("geometry") ;
+    geometrySection.setParameter<std::string>( "GeometryType", "EmptyGeometry" ) ;
+    
+    auto &datasourceSection = config.createSection("datasource") ;
+    auto lcioReader = pluginMgr.create<DataSourcePlugin>( "LCIOReader" ) ;
+    if( lcioReader ) {
+      lcioReader->getParameters( datasourceSection ) ;
+      datasourceSection.setParameter<std::string>( "DatasourceType", "LCIOReader" ) ;
+    }
+    else {
+      datasourceSection.setParameter<std::string>( "DatasourceType", "CustomSource" ) ;
+      datasourceSection.setParameter<std::string>( "InputFile", "yourinput.dat" ) ;
+    }
+
+    auto &bookstoreSection = config.createSection("bookstore") ;
+    _bookStoreManager.getParameters( bookstoreSection ) ;
+    
+    auto &globalSection = config.createSection("global") ;
+    globalSection.setParameter( "RandomSeed", 1234567890 ) ;
+    
+    auto &procsSection = config.createSection("processors") ;
+    auto pluginNames = pluginMgr.pluginNames() ;
+    for( auto pluginName : pluginNames ) {
+      auto processor = pluginMgr.create<Processor>( pluginName ) ;
+      if( nullptr == processor ) {
+        continue ;
+      }
+      processor->setName( "My" + processor->type() ) ;
+      logger()->log<MESSAGE>() << "Processor: " << processor->type() << std::endl; 
+      auto &procSection = procsSection.addSection( processor->name() ) ;
+      procSection.setParameter( "ProcessorName", processor->name() ) ;
+      procSection.setParameter( "ProcessorType", processor->type() ) ;
+      auto criticalOpt = processor->runtimeOption( Processor::ERuntimeOption::eCritical ) ;
+      auto cloneOpt = processor->runtimeOption( Processor::ERuntimeOption::eClone ) ;
+      procSection.setParameter( "ProcessorCritical", criticalOpt.has_value() ? criticalOpt.value() : false ) ;
+      procSection.setParameter( "ProcessorClone", cloneOpt.has_value() ? cloneOpt.value() : false ) ;
+      processor->getParameters( procSection ) ;
+    }
+    logger()->log<MESSAGE>() << config << std::endl ;
+    ConfigHelper::writeConfig( _parseResult._config.value(), config ) ;
   }
 
 } // namespace marlin
