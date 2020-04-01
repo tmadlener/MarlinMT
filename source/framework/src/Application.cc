@@ -312,14 +312,10 @@ namespace marlin {
     globalSection.setParameter( "RandomSeed", 1234567890 ) ;
     
     auto &procsSection = config.createSection("processors") ;
-    auto pluginNames = pluginMgr.pluginNames() ;
+    auto pluginNames = pluginMgr.pluginNames<Processor>() ;
     for( auto pluginName : pluginNames ) {
       auto processor = pluginMgr.create<Processor>( pluginName ) ;
-      if( nullptr == processor ) {
-        continue ;
-      }
       processor->setName( "My" + processor->type() ) ;
-      logger()->log<MESSAGE>() << "Processor: " << processor->type() << std::endl; 
       auto &procSection = procsSection.addSection( processor->name() ) ;
       procSection.setParameter( "ProcessorName", processor->name() ) ;
       procSection.setParameter( "ProcessorType", processor->type() ) ;
@@ -329,7 +325,6 @@ namespace marlin {
       procSection.setParameter( "ProcessorClone", cloneOpt.has_value() ? cloneOpt.value() : false ) ;
       processor->getParameters( procSection ) ;
     }
-    logger()->log<MESSAGE>() << config << std::endl ;
     ConfigHelper::writeConfig( _parseResult._config.value(), config ) ;
   }
 
