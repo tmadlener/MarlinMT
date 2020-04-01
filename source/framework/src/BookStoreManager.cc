@@ -124,12 +124,14 @@ namespace marlin {
     book::EntryData<HistT> data(title, axesconfig);
 
     book::Handle<book::Entry<HistT>> entry;
-
+    
     if( flagsToPass.contains(book::Flags::Book::MultiCopy)) {
       entry =  _bookStore.book( path, name, data.multiCopy(nthreads) ) ;
-    } else if ( flagsToPass.contains(book::Flags::Book::MultiShared)) {
-      entry =  _bookStore.book( path, name, data.multiShared() ) ;
-    } else if ( flagsToPass.contains(book::Flags::Book::Single)) {
+    } 
+    else if ( flagsToPass.contains(book::Flags::Book::MultiShared)) {
+      entry =  _bookStore.book( path, name, data.multiShared(nthreads) ) ;
+    } 
+    else if ( flagsToPass.contains(book::Flags::Book::Single)) {
       if ( nthreads != 1) {
         _logger->log<ERROR>() << "Single Memory layout can't be used"
           " with concurrency! \n"
@@ -138,8 +140,7 @@ namespace marlin {
       }
       entry =  _bookStore.book( path, name, data.single() ) ;
     } 
-    else 
-    {
+    else {
       MARLIN_THROW("Try to book without MemoryLayout Flag");
     }
 
