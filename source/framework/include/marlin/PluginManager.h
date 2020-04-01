@@ -209,17 +209,13 @@ namespace marlin {
     auto factoryIter = _pluginFactories.find( name ) ;
     // plugin not found ?
     if ( _pluginFactories.end() == factoryIter ) {
-      _logger->log<MESSAGE>() << "Plugin '" << name << "' not found" << std::endl ;
       return nullptr ;
     }
-    _logger->log<MESSAGE>() << "Plugin name: " << name << std::endl ;
-    _logger->log<MESSAGE>() << "Library: " << factoryIter->second._libraryName << std::endl ;
     try {
       auto factory = std::any_cast<FactoryFunctionT<T>>( factoryIter->second._factory ) ;
       return factory() ;
     }
     catch(const std::bad_any_cast& e) {
-      _logger->log<MESSAGE>() << "Wrong cast of base type: " << e.what() << std::endl ;
       return nullptr ;
     }
   }
