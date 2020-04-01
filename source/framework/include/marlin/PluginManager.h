@@ -143,6 +143,12 @@ namespace marlin {
      *  @brief  Get all registered plugin name
      */
     std::vector<std::string> pluginNames() const ;
+    
+    /**
+     *  @brief  Get all registered plugin name with the Base type
+     */
+    template <typename Base>
+    std::vector<std::string> pluginNames() const ;
 
     /**
      *  @brief  Whether the plugin with of a given name is registered
@@ -203,6 +209,23 @@ namespace marlin {
 
   //--------------------------------------------------------------------------
 
+  template <typename Base>
+  inline std::vector<std::string> PluginManager::pluginNames() const {
+    std::vector<std::string> names {} ;
+    for( auto &p : _pluginFactories ) {
+      try {
+        auto factory = std::any_cast<FactoryFunctionT<Base>>( p.second._factory ) ;
+        names.push_back( p.first ) ;
+      }
+      catch(const std::bad_any_cast& e) {
+        continue ;
+      }
+    }
+    return names ;
+  }
+  
+  //--------------------------------------------------------------------------
+  
   template <typename T>
   inline std::unique_ptr<T> PluginManager::create( const std::string &name ) const {
     lock_type lock( _mutex ) ;
