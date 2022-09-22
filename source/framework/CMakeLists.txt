@@ -91,6 +91,7 @@ target_include_directories(
 target_link_libraries( 
   CorePlugins PUBLIC MarlinMT::Core ${TinyXML_LIBRARY}
 )
+target_compile_definitions(CorePlugins PRIVATE TIXML_USE_STL)
 
 # Add MarlinMTCorePlugins library to list of MARLINMT_DLL libraries
 marlinmt_add_plugin_library( TARGETS CorePlugins )
