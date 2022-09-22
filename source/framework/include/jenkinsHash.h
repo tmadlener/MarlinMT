@@ -130,7 +130,7 @@ inline unsigned jenkins_hash ( unsigned char *k, unsigned length, unsigned initv
   case 4 : a += ( (unsigned)k[3] << 24 ); MARLIN_FALLTHROUGH ;
   case 3 : a += ( (unsigned)k[2] << 16 ); MARLIN_FALLTHROUGH ;
   case 2 : a += ( (unsigned)k[1] << 8 ); MARLIN_FALLTHROUGH ;
-  case 1 : a += k[0]; MARLIN_FALLTHROUGH ;
+  case 1 : a += k[0];
   }
 
   mix ( a, b, c );
